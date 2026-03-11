@@ -1,0 +1,38 @@
+{% extends 'employee/base_employee.html' %}
+{% block title %}Training Hub{% endblock %}
+{% block page_title %}Training Hub{% endblock %}
+{% block content %}
+
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+  {% for cat in categories %}
+  <a href="{{ url_for('employee.training', cat=cat) }}"
+     style="padding:.4rem 1rem;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;transition:all .2s;
+            {% if active_cat==cat %}background:var(--accent);color:#fff{% else %}background:#fff;color:var(--muted);border:1px solid var(--border){% endif %}">
+    {{ cat }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="row g-3">
+  {% for r in resources %}
+  <div class="col-md-6 col-xl-4">
+    <a href="{{ url_for('employee.training_detail', rid=r.id) }}" style="text-decoration:none">
+      <div style="background:#fff;border-radius:14px;border:1px solid var(--border);padding:1.2rem;transition:all .2s;height:100%" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:1.8rem;margin-bottom:.6rem">
+          {% if r.resource_type=='video' %}🎬{% elif r.resource_type=='policy' %}📋{% else %}📖{% endif %}
+        </div>
+        <span class="e-badge eb-blue" style="margin-bottom:.5rem;display:inline-block">{{ r.category }}</span>
+        <h5 style="font-size:.95rem;font-weight:700;color:var(--text);margin:.3rem 0 .4rem">{{ r.title }}</h5>
+        <p style="font-size:.8rem;color:var(--muted);line-height:1.5;margin:0">{{ r.description or '' }}</p>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.7rem">{{ r.created_at.strftime('%d %b %Y') }}</div>
+      </div>
+    </a>
+  </div>
+  {% else %}
+  <div class="col-12" style="text-align:center;padding:5rem;color:var(--muted)">
+    <i class="bi bi-book" style="font-size:3rem;display:block;margin-bottom:1rem;opacity:.3"></i>
+    No training resources in this category yet.
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

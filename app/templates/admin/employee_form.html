@@ -1,0 +1,95 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ 'Edit' if emp else 'Add' }} Employee{% endblock %}
+{% block page_title %}{{ 'Edit Employee' if emp else 'Add New Employee' }}{% endblock %}
+{% block content %}
+<div style="max-width:700px">
+  <a href="{{ url_for('admin.employees') }}" class="btn-ghost mb-4" style="display:inline-flex">
+    <i class="bi bi-arrow-left"></i> Back to Employees
+  </a>
+  <form method="POST">
+    <div class="panel mb-4">
+      <div class="panel-head"><h5>Personal Information</h5></div>
+      <div class="panel-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="ctrl-label">Full Name *</label>
+            <input type="text" name="full_name" class="ctrl" required
+                   value="{{ emp.user.full_name if emp else '' }}" placeholder="Ravi Kumar">
+          </div>
+          <div class="col-md-6">
+            <label class="ctrl-label">Phone</label>
+            <input type="tel" name="phone" class="ctrl"
+                   value="{{ emp.user.phone if emp else '' }}" placeholder="9876543210">
+          </div>
+          {% if not emp %}
+          <div class="col-md-6">
+            <label class="ctrl-label">Username (for login) *</label>
+            <input type="text" name="username" class="ctrl" required placeholder="ravi.kumar">
+          </div>
+          <div class="col-md-6">
+            <label class="ctrl-label">Email *</label>
+            <input type="email" name="email" class="ctrl" required placeholder="ravi@mbmaniyar.com">
+          </div>
+          <div class="col-md-6">
+            <label class="ctrl-label">Password *</label>
+            <input type="text" name="password" class="ctrl" required placeholder="Set login password">
+          </div>
+          {% else %}
+          <div class="col-md-6">
+            <label class="ctrl-label">New Password (leave blank to keep)</label>
+            <input type="text" name="new_password" class="ctrl" placeholder="Enter new password">
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel mb-4">
+      <div class="panel-head"><h5>Job Details</h5></div>
+      <div class="panel-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="ctrl-label">Employee Code *</label>
+            <input type="text" name="employee_code" class="ctrl" required
+                   value="{{ emp.employee_code if emp else '' }}" placeholder="MBM-001"
+                   {% if emp %}readonly style="opacity:.6"{% endif %}>
+          </div>
+          <div class="col-md-4">
+            <label class="ctrl-label">Designation</label>
+            <input type="text" name="designation" class="ctrl"
+                   value="{{ emp.designation if emp else '' }}" placeholder="Sales Associate">
+          </div>
+          <div class="col-md-4">
+            <label class="ctrl-label">Department</label>
+            <select name="department" class="ctrl">
+              {% for d in ['Sales Floor','Billing Counter','Stock Room','Management','Security'] %}
+              <option {% if emp and emp.department==d %}selected{% endif %}>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="ctrl-label">Date of Joining</label>
+            <input type="date" name="date_of_joining" class="ctrl"
+                   value="{{ emp.date_of_joining.strftime('%Y-%m-%d') if emp and emp.date_of_joining else '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="ctrl-label">Base Salary (₹/month)</label>
+            <input type="number" name="base_salary" class="ctrl" step="0.01"
+                   value="{{ emp.base_salary if emp else '' }}" placeholder="15000">
+          </div>
+          <div class="col-md-4">
+            <label class="ctrl-label">Commission Rate (%)</label>
+            <input type="number" name="commission_rate" class="ctrl" step="0.01" min="0" max="100"
+                   value="{{ (emp.commission_rate*100)|round(2) if emp else '0' }}" placeholder="2.0">
+            <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem">% of sales they handle</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-accent" style="padding:.8rem 2.5rem;font-size:1rem">
+      <i class="bi bi-check-lg me-2"></i>{{ 'Update Employee' if emp else 'Add Employee' }}
+    </button>
+  </form>
+</div>
+{% endblock %}

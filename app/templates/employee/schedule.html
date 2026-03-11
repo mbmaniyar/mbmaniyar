@@ -1,0 +1,78 @@
+{% extends 'employee/base_employee.html' %}
+{% block title %}My Schedule{% endblock %}
+{% block page_title %}My Schedule{% endblock %}
+{% block extra_css %}
+<style>
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.4rem}
+.cal-head{text-align:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:.4rem 0}
+.cal-cell{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.82rem;font-weight:600;background:#F8FAFF;border:1px solid transparent;transition:all .2s}
+.cal-cell.has-shift{background:#EFF6FF;border-color:#BFDBFE}
+.cal-cell.today{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,125,255,.2)}
+.cal-cell.completed{background:#ECFDF5;border-color:#A7F3D0}
+.cal-cell.absent{background:#FEF2F2;border-color:#FECACA}
+.cal-cell.empty{background:transparent;border:none}
+.shift-dot{width:5px;height:5px;border-radius:50%;margin-top:.1rem}
+.shift-mini{font-size:.5rem;color:var(--muted);margin-top:.05rem;text-align:center;line-height:1.2}
+</style>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="e-card">
+      <div class="e-card-head">
+        <div style="display:flex;align-items:center;gap:.8rem">
+          <a href="{{ url_for('employee.schedule', month=prev_month, year=prev_year) }}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--text);text-decoration:none;transition:all .2s" onmouseover="this.style.background='var(--accent)';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='var(--text)'"><i class="bi bi-chevron-left"></i></a>
+          <div style="font-size:1rem;font-weight:700;min-width:150px;text-align:center">{{ month_name }} {{ year }}</div>
+          <a href="{{ url_for('employee.schedule', month=next_month, year=next_year) }}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--text);text-decoration:none;transition:all .2s" onmouseover="this.style.background='var(--accent)';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='var(--text)'"><i class="bi bi-chevron-right"></i></a>
+        </div>
+        <span style="font-size:.8rem;color:var(--muted)">{{ shifts|length }} shifts</span>
+      </div>
+      <div class="e-card-body">
+        <div class="cal-grid mb-2">{% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<div class="cal-head">{{ d }}</div>{% endfor %}</div>
+        <div class="cal-grid">
+          {% for week in cal %}{% for day in week %}
+            {% if day == 0 %}<div class="cal-cell empty"></div>
+            {% else %}
+              {% set shift = shift_map.get(day) %}
+              <div class="cal-cell {% if shift %}has-shift {{ shift.status }}{% endif %} {% if day==today.day and month==today.month and year==today.year %}today{% endif %}">
+                <span>{{ day }}</span>
+                {% if shift %}<span class="shift-dot" style="background:{% if shift.status=='completed' %}var(--green){% elif shift.status=='absent' %}var(--red){% else %}var(--accent){% endif %}"></span>
+                <span class="shift-mini">{{ shift.start_time.strftime('%I%p')|lower }}</span>{% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}{% endfor %}
+        </div>
+        <div style="display:flex;gap:1.2rem;margin-top:1rem;flex-wrap:wrap">
+          {% for lbl, col in [('Scheduled','var(--accent)'),('Completed','var(--green)'),('Absent','var(--red)')] %}
+          <div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--muted)">
+            <span style="width:9px;height:9px;border-radius:50%;background:{{ col }};display:inline-block"></span>{{ lbl }}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="e-card">
+      <div class="e-card-head"><h5>Shift Details</h5></div>
+      <div class="e-card-body" style="padding:.6rem">
+        {% for s in shifts %}
+        <div style="display:flex;align-items:center;gap:.8rem;padding:.7rem .6rem;border-bottom:1px solid var(--border);border-left:3px solid {% if s.status=='completed' %}var(--green){% elif s.status=='absent' %}var(--red){% else %}var(--accent){% endif %};margin-bottom:.3rem;border-radius:0 8px 8px 0;background:#F8FAFF">
+          <div style="text-align:center;min-width:38px">
+            <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted)">{{ s.date.strftime('%a') }}</div>
+            <div style="font-size:1.1rem;font-weight:800">{{ s.date.day }}</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:.84rem;font-weight:600">{{ s.start_time.strftime('%I:%M %p') }} – {{ s.end_time.strftime('%I:%M %p') }}</div>
+            {% if s.notes %}<div style="font-size:.72rem;color:var(--muted)">{{ s.notes }}</div>{% endif %}
+          </div>
+          <span class="e-badge {% if s.status=='completed' %}eb-green{% elif s.status=='absent' %}eb-red{% else %}eb-blue{% endif %}">{{ s.status|replace('_',' ')|title }}</span>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:2rem;color:var(--muted)">No shifts this month</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

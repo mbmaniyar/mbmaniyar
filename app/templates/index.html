@@ -1,0 +1,405 @@
+<!--
+  index.html — The M B MANIYAR Landing Page
+  
+  This extends base.html — it only defines the 'content' block.
+  Everything else (navbar, footer) comes from base.html automatically.
+-->
+{% extends 'base.html' %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ---- HERO SECTION ---- */
+  .hero-section {
+    background: linear-gradient(135deg, var(--primary-dk) 0%, var(--primary) 60%, #A0522D 100%);
+    min-height: 88vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decorative background pattern */
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(201,146,42,0.04) 0px,
+      rgba(201,146,42,0.04) 2px,
+      transparent 2px,
+      transparent 20px
+    );
+  }
+
+  .hero-badge {
+    background: rgba(201,146,42,0.2);
+    border: 1px solid var(--gold);
+    color: var(--gold-lt);
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 0.4rem 1.2rem;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-title {
+    font-family: var(--font-head);
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+  }
+
+  .hero-title span { color: var(--gold-lt); }
+
+  .hero-subtitle {
+    color: rgba(255,255,255,0.75);
+    font-size: 1.1rem;
+    font-weight: 300;
+    margin-bottom: 2rem;
+    max-width: 480px;
+  }
+
+  .hero-cta-group { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+  .btn-hero-primary {
+    background: var(--gold);
+    color: #fff;
+    font-weight: 600;
+    padding: 0.8rem 2rem;
+    border-radius: 30px;
+    border: none;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: all 0.3s;
+    box-shadow: 0 4px 20px rgba(201,146,42,0.4);
+  }
+  .btn-hero-primary:hover {
+    background: var(--gold-lt);
+    color: var(--dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(201,146,42,0.5);
+  }
+
+  .btn-hero-secondary {
+    background: transparent;
+    color: #fff;
+    font-weight: 500;
+    padding: 0.8rem 2rem;
+    border-radius: 30px;
+    border: 2px solid rgba(255,255,255,0.4);
+    font-size: 1rem;
+    text-decoration: none;
+    transition: all 0.3s;
+  }
+  .btn-hero-secondary:hover {
+    border-color: #fff;
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+  }
+
+  /* Floating decoration card on hero right */
+  .hero-deco-card {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 2rem;
+    color: #fff;
+  }
+
+  .hero-stat { text-align: center; padding: 0.5rem 1rem; }
+  .hero-stat-num {
+    font-family: var(--font-head);
+    font-size: 2.5rem;
+    color: var(--gold-lt);
+    line-height: 1;
+  }
+  .hero-stat-label {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ---- FEATURES STRIP ---- */
+  .features-strip {
+    background: var(--primary);
+    padding: 1rem 0;
+  }
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .feature-item i { color: var(--gold-lt); font-size: 1.1rem; }
+
+  /* ---- PORTAL CARDS ---- */
+  .section-title {
+    font-family: var(--font-head);
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .portal-card {
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    height: 100%;
+  }
+  .portal-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.12) !important;
+  }
+
+  .portal-icon-wrap {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+
+  /* ---- PICKUP BANNER ---- */
+  .pickup-banner {
+    background: linear-gradient(135deg, #1A1A2E, #2d2d44);
+    border-radius: 20px;
+    padding: 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .pickup-banner::before {
+    content: '\F1F6';
+    font-family: 'Bootstrap-Icons';
+    position: absolute;
+    right: -20px; top: -20px;
+    font-size: 180px;
+    color: rgba(255,255,255,0.03);
+    line-height: 1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     HERO SECTION
+============================================================ -->
+<section class="hero-section">
+  <div class="container position-relative">
+    <div class="row align-items-center gy-5">
+
+      <!-- Left: Text Content -->
+      <div class="col-lg-7">
+        <div class="hero-badge">
+          <i class="bi bi-stars me-1"></i> Mantha's Finest Clothing Store
+        </div>
+
+        <h1 class="hero-title">
+          Fashion That<br>
+          <span>Fits Your Life.</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Quality clothing for the whole family. Shop online and
+          pick up in-store at Main Road, Mantha — or browse our
+          collection in person.
+        </p>
+
+        <div class="hero-cta-group">
+          <a href="{{ url_for('customer.index') }}" class="btn-hero-primary">
+            <i class="bi bi-bag me-2"></i>Shop Now
+          </a>
+          <a href="{{ url_for('auth.register') }}" class="btn-hero-secondary">
+            Create Free Account
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: Stats Card -->
+      <div class="col-lg-5 d-none d-lg-block">
+        <div class="hero-deco-card">
+          <p class="text-center mb-3"
+             style="color:rgba(255,255,255,0.5); font-size:0.8rem;
+                    text-transform:uppercase; letter-spacing:2px;">
+            Store at a Glance
+          </p>
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="hero-stat">
+                <div class="hero-stat-num">500+</div>
+                <div class="hero-stat-label">Products</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="hero-stat">
+                <div class="hero-stat-num">10+</div>
+                <div class="hero-stat-label">Brands</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="hero-stat">
+                <div class="hero-stat-num">All</div>
+                <div class="hero-stat-label">Sizes Available</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="hero-stat">
+                <div class="hero-stat-num">Free</div>
+                <div class="hero-stat-label">Store Pickup</div>
+              </div>
+            </div>
+          </div>
+          <hr style="border-color:rgba(255,255,255,0.1)">
+          <p class="text-center mb-0"
+             style="color:rgba(255,255,255,0.5); font-size:0.8rem;">
+            <i class="bi bi-geo-alt me-1" style="color:var(--gold)"></i>
+            Main Road, Mantha, India
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Features strip -->
+<div class="features-strip">
+  <div class="container">
+    <div class="row justify-content-center gy-2">
+      <div class="col-6 col-md-3 text-center">
+        <div class="feature-item justify-content-center">
+          <i class="bi bi-bag-check"></i> Buy Online, Pick Up In-Store
+        </div>
+      </div>
+      <div class="col-6 col-md-3 text-center">
+        <div class="feature-item justify-content-center">
+          <i class="bi bi-rulers"></i> Full Size Range
+        </div>
+      </div>
+      <div class="col-6 col-md-3 text-center">
+        <div class="feature-item justify-content-center">
+          <i class="bi bi-shield-check"></i> Quality Guaranteed
+        </div>
+      </div>
+      <div class="col-6 col-md-3 text-center">
+        <div class="feature-item justify-content-center">
+          <i class="bi bi-phone"></i> UPI & Cash Accepted
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     THREE PORTALS
+============================================================ -->
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="section-title">One Store, Three Portals</h2>
+      <p class="text-muted">M B MANIYAR connects customers, staff, and management in one system.</p>
+    </div>
+    <div class="row g-4">
+
+      <!-- Customer Portal -->
+      <div class="col-md-4">
+        <a href="{{ url_for('customer.index') }}" class="portal-card">
+          <div class="card card-mbm h-100 p-4">
+            <div class="portal-icon-wrap bg-warning bg-opacity-10">
+              🛍️
+            </div>
+            <h4 class="fw-bold mb-2" style="color:var(--primary)">Customer Shop</h4>
+            <p class="text-muted mb-3">
+              Browse our full catalogue, check sizes, add to cart,
+              and place a pickup order — all from your phone.
+            </p>
+            <span class="text-warning fw-semibold">
+              Shop Now <i class="bi bi-arrow-right"></i>
+            </span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Employee Portal -->
+      <div class="col-md-4">
+        <a href="{{ url_for('auth.login') }}" class="portal-card">
+          <div class="card card-mbm h-100 p-4">
+            <div class="portal-icon-wrap bg-primary bg-opacity-10">
+              👔
+            </div>
+            <h4 class="fw-bold mb-2" style="color:var(--primary)">Employee Portal</h4>
+            <p class="text-muted mb-3">
+              Staff login to view shift schedules, daily tasks,
+              salary slips, and monthly commission statements.
+            </p>
+            <span style="color:var(--primary)" class="fw-semibold">
+              Staff Login <i class="bi bi-arrow-right"></i>
+            </span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Admin Dashboard -->
+      <div class="col-md-4">
+        <a href="{{ url_for('auth.login') }}" class="portal-card">
+          <div class="card card-mbm h-100 p-4">
+            <div class="portal-icon-wrap bg-danger bg-opacity-10">
+              ⚙️
+            </div>
+            <h4 class="fw-bold mb-2" style="color:var(--primary)">Admin Dashboard</h4>
+            <p class="text-muted mb-3">
+              Full POS billing counter, inventory management,
+              k satish brand tracker, and complete ERP overview.
+            </p>
+            <span class="text-danger fw-semibold">
+              Admin Login <i class="bi bi-arrow-right"></i>
+            </span>
+          </div>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PICKUP BANNER
+============================================================ -->
+<section class="pb-5">
+  <div class="container">
+    <div class="pickup-banner">
+      <div class="row align-items-center gy-3">
+        <div class="col-lg-8">
+          <h3 class="text-white mb-2" style="font-family:var(--font-head)">
+            🛒 Buy Online — Pick Up In Store. Free!
+          </h3>
+          <p class="mb-0" style="color:rgba(255,255,255,0.65)">
+            Order from home, we'll keep it ready at the billing counter.
+            No delivery charges. No waiting. Just walk in and collect.
+          </p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+          <a href="{{ url_for('auth.register') }}"
+             class="btn btn-warning fw-bold rounded-pill px-4 py-2">
+            Create Free Account
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Orders{% endblock %}
+{% block page_title %}Order Management{% endblock %}
+{% block content %}
+
+<!-- Status tabs -->
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+  {% for s in [('all','All Orders'),('confirmed','Pending Pickup'),('ready_for_pickup','Ready'),('completed','Completed'),('cancelled','Cancelled')] %}
+  <a href="{{ url_for('admin.orders', status=s[0]) }}"
+     style="padding:.4rem 1rem;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;transition:all .2s;
+            {% if status==s[0] %}background:var(--accent);color:#1A1A00{% else %}background:var(--surface2);color:var(--muted){% endif %}">
+    {{ s[1] }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h5><i class="bi bi-receipt me-2"></i>{{ orders|length }} Order{% if orders|length!=1 %}s{% endif %}</h5>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead>
+        <tr><th>Order #</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th>Update</th></tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><span style="font-family:var(--ff-mono);font-size:.82rem;color:var(--accent)">{{ o.order_number }}</span></td>
+          <td>
+            <div style="font-size:.875rem;font-weight:500">{{ o.customer.full_name }}</div>
+            <div style="font-size:.75rem;color:var(--muted)">{{ o.customer.phone or o.customer.email }}</div>
+          </td>
+          <td>
+            {% for item in o.items %}
+            <div style="font-size:.78rem;color:var(--muted)">{{ item.product.name[:20] }}… × {{ item.quantity }} ({{ item.variant.size }})</div>
+            {% endfor %}
+          </td>
+          <td style="font-weight:700;font-family:var(--ff-mono)">₹{{ "%.0f"|format(o.total_amount) }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.update_order', oid=o.id) }}">
+              <input type="hidden" name="status" value="{{ o.status }}">
+              <select name="payment_status" class="ctrl" style="padding:.3rem .5rem;font-size:.78rem;width:110px;margin-bottom:.25rem"
+                      onchange="this.form.submit()">
+                <option value="pending" {% if o.payment_status=='pending' %}selected{% endif %}>⏳ Pending</option>
+                <option value="paid" {% if o.payment_status=='paid' %}selected{% endif %}>✅ Paid</option>
+              </select>
+            </form>
+            <div style="font-size:.72rem;color:var(--muted)">{{ o.payment_method or '—' }}</div>
+          </td>
+          <td>
+            <span class="badge-status badge-{{ o.status }}">{{ o.status|replace('_',' ')|title }}</span>
+          </td>
+          <td style="font-size:.8rem;color:var(--muted);white-space:nowrap">{{ o.created_at.strftime('%d %b %y') }}<br>{{ o.created_at.strftime('%I:%M %p') }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.update_order', oid=o.id) }}">
+              <input type="hidden" name="payment_status" value="{{ o.payment_status }}">
+              <select name="status" class="ctrl" style="padding:.3rem .5rem;font-size:.78rem;width:150px"
+                      onchange="this.form.submit()">
+                {% for s in ['confirmed','ready_for_pickup','completed','cancelled'] %}
+                <option value="{{ s }}" {% if o.status==s %}selected{% endif %}>{{ s|replace('_',' ')|title }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:3rem;color:var(--muted)">No orders found</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

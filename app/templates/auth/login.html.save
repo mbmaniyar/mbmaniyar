@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+
+{% block extra_css %}
+<style>
+  .auth-wrapper {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    padding: 3rem 0;
+  }
+  .auth-card {
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(139,26,26,0.1);
+    overflow: hidden;
+    border: none;
+  }
+  .auth-sidebar {
+    background: linear-gradient(160deg, var(--primary-dk), var(--primary));
+    padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .auth-sidebar::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; right: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: rgba(201,146,42,0.15);
+  }
+  .form-control-mbm {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+  }
+  .form-control-mbm:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139,26,26,0.1);
+  }
+  .input-icon-wrap { position: relative; }
+  .input-icon-wrap i {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray);
+  }
+  .input-icon-wrap .form-control-mbm { padding-left: 2.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-9 col-xl-8">
+
+        <div class="card auth-card">
+          <div class="row g-0">
+
+            <!-- Left sidebar -->
+            <div class="col-md-4 auth-sidebar d-none d-md-flex">
+              <div class="position-relative z-1 text-white">
+                <h2 style="font-family:var(--font-head); color:var(--gold-lt)">
+                  M B MANIYAR
+                </h2>
+                <p style="color:rgba(255,255,255,0.65); font-size:0.85rem"
+                   class="mb-4">Main Road, Mantha</p>
+
+                <div class="mb-3 d-flex align-items-start gap-2">
+                  <i class="bi bi-person-circle mt-1"
+                     style="color:var(--gold)"></i>
+                  <div>
+                    <div class="fw-semibold">Customers</div>
+                    <small style="color:rgba(255,255,255,0.6)">
+                      Shop & place pickup orders</small>
+                  </div>
+                </div>
+                <div class="mb-3 d-flex align-items-start gap-2">
+                  <i class="bi bi-person-badge mt-1"
+                     style="color:var(--gold)"></i>
+                  <div>
+                    <div class="fw-semibold">Employees</div>
+                    <small style="color:rgba(255,255,255,0.6)">
+                      View shifts & salary</small>
+                  </div>
+                </div>
+                <div class="d-flex align-items-start gap-2">
+                  <i class="bi bi-speedometer2 mt-1"
+                     style="color:var(--gold)"></i>
+                  <div>
+                    <div class="fw-semibold">Admin</div>
+                    <small style="color:rgba(255,255,255,0.6)">
+                      POS & full management</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Login form -->
+            <div class="col-md-8">
+              <div class="p-4 p-md-5">
+
+                <h3 class="page-heading mb-1">Welcome Back</h3>
+                <p class="text-muted mb-4" style="font-size:0.9rem">
+                  Sign in to your account
+                </p>
+
+                <!-- Login Form -->
+                <!-- action="" means submit to the same URL (POST /auth/login) -->
+                <form method="POST" action="{{ url_for('auth.login') }}">
+
+                  <!-- CSRF token — Flask-WTF security protection -->
+                  <!-- Prevents fake form submissions from other websites -->
+                  <input type="hidden" name="csrf_token"
+                         value="{{ csrf_token() if csrf_token is defined else '' }}">
+
+                  <!-- Username field -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size:0.9rem">
+                      Username or Email
+                    </label>
+                    <div class="input-icon-wrap">
+                      <i class="bi bi-person"></i>
+                      <input type="text" name="username"
+                             class="form-control form-control-mbm"
+                             placeholder="Enter username or email"
+                             required autofocus />
+                    </div>
+                  </div>
+
+                  <!-- Password field -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size:0.9rem">
+                      Password
+                    </label>
+                    <div class="input-icon-wrap">
+                      <i class="bi bi-lock"></i>
+                      <input type="password" name="password"
+                             class="form-control form-control-mbm"
+                             placeholder="Enter your password"
+                             required />
+                    </div>
+                  </div>
+
+                  <!-- Remember me -->
+                  <div class="mb-4 d-flex align-items-center
+                              justify-content-between">
+                    <div class="form-check mb-0">
+                      <input class="form-check-input" type="checkbox"
+                             name="remember" id="rememberMe" />
+                      <label class="form-check-label text-muted"
+                             for="rememberMe" style="font-size:0.9rem">
+                        Keep me logged in
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Submit button -->
+                  <button type="submit"
+                          class="btn btn-maroon w-100 py-2 rounded-pill
+                                 fw-semibold fs-6">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                  </button>
+
+                </form>
+
+                <hr class="my-4">
+
+                <p class="text-center text-muted mb-0" style="font-size:0.9rem">
+                  New customer?
+                  <a href="{{ url_for('auth.register') }}"
+                     class="fw-semibold text-decoration-none"
+                     style="color:var(--primary)">
+                    Create a free account
+                  </a>
+                </p>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Admin{% endblock %} | MBM Control</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E1A;--sidebar:#0D1120;--surface:#131929;--surface2:#1A2238;
+  --border:rgba(255,255,255,.07);--accent:#F5A623;--accent2:#E8463A;
+  --green:#2ECC71;--blue:#4A9EFF;--purple:#9B59B6;
+  --text:#E8EAF0;--muted:#6B7494;
+  --ff-head:'Syne',sans-serif;--ff-body:'DM Sans',sans-serif;--ff-mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-body);background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:240px;min-height:100vh;background:var(--sidebar);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;
+  position:fixed;left:0;top:0;bottom:0;z-index:200;
+  transition:transform .3s;
+}
+.sidebar-logo{
+  padding:1.4rem 1.2rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.75rem;
+}
+.sidebar-logo-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),#E8903A);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;font-weight:800;color:#fff;font-family:var(--ff-head);
+  flex-shrink:0;
+}
+.sidebar-logo-text{font-family:var(--ff-head);font-size:.95rem;font-weight:700;line-height:1.2}
+.sidebar-logo-text small{display:block;font-family:var(--ff-body);font-size:.65rem;color:var(--muted);font-weight:400;letter-spacing:1px}
+
+.nav-section-label{
+  font-size:.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);padding:.9rem 1.2rem .3rem;
+}
+.nav-item{
+  display:flex;align-items:center;gap:.7rem;
+  padding:.6rem 1.2rem;margin:.1rem .7rem;
+  border-radius:8px;color:var(--muted);font-size:.875rem;
+  font-weight:500;text-decoration:none;transition:all .2s;cursor:pointer;
+}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(245,166,35,.1);color:var(--accent);border:1px solid rgba(245,166,35,.15)}
+.nav-item i{font-size:1rem;width:18px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--accent2);color:#fff;border-radius:50px;font-size:.65rem;padding:.1rem .45rem;font-weight:700}
+
+.sidebar-bottom{margin-top:auto;padding:1rem;border-top:1px solid var(--border)}
+.store-status{
+  background:var(--surface2);border-radius:10px;padding:.8rem;
+  display:flex;align-items:center;gap:.6rem;
+}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ── MAIN CONTENT ── */
+.main-content{margin-left:240px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{
+  background:var(--sidebar);border-bottom:1px solid var(--border);
+  padding:.9rem 1.8rem;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-title{font-family:var(--ff-head);font-size:1.2rem;font-weight:700}
+.topbar-actions{display:flex;align-items:center;gap:.75rem}
+.admin-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#E8903A);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:700;color:#fff;cursor:pointer;
+}
+.page-body{padding:1.8rem;flex:1}
+
+/* ── STAT CARDS ── */
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:1.3rem 1.5rem;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.06}
+.stat-card.orange::before{background:var(--accent)}
+.stat-card.red::before{background:var(--accent2)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.blue::before{background:var(--blue)}
+.stat-label{font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.stat-value{font-family:var(--ff-head);font-size:2rem;font-weight:800;line-height:1}
+.stat-icon{position:absolute;top:1.2rem;right:1.2rem;font-size:1.4rem;opacity:.4}
+
+/* ── TABLES ── */
+.data-table{width:100%;border-collapse:separate;border-spacing:0}
+.data-table th{
+  font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);padding:.75rem 1rem;border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+.data-table td{
+  padding:.7rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:.875rem;vertical-align:middle;
+}
+.data-table tr:hover td{background:rgba(255,255,255,.02)}
+.data-table tr:last-child td{border-bottom:none}
+
+/* ── BADGES ── */
+.badge-status{display:inline-flex;align-items:center;gap:.3rem;border-radius:50px;padding:.25rem .7rem;font-size:.7rem;font-weight:600}
+.badge-confirmed{background:rgba(74,158,255,.15);color:var(--blue)}
+.badge-pending{background:rgba(245,166,35,.15);color:var(--accent)}
+.badge-completed{background:rgba(46,204,113,.15);color:var(--green)}
+.badge-paid{background:rgba(46,204,113,.15);color:var(--green)}
+.badge-online{background:rgba(46,204,113,.15);color:var(--green)}
+.badge-offline{background:rgba(107,116,148,.15);color:var(--muted)}
+.badge-low{background:rgba(245,166,35,.15);color:var(--accent)}
+.badge-oos{background:rgba(232,70,58,.15);color:var(--accent2)}
+
+/* ── CARDS / PANELS ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.panel-head{padding:1rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-head h5{font-family:var(--ff-head);font-size:1rem;font-weight:700;margin:0}
+.panel-body{padding:1.4rem}
+
+/* ── FORM CONTROLS ── */
+.ctrl{
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);border-radius:10px;padding:.65rem 1rem;
+  font-family:var(--ff-body);font-size:.9rem;width:100%;
+  transition:border-color .2s;outline:none;
+}
+.ctrl:focus{border-color:var(--accent)}
+.ctrl-label{font-size:.75rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;display:block}
+textarea.ctrl{resize:vertical;min-height:90px}
+select.ctrl option{background:var(--surface)}
+
+/* ── BUTTONS ── */
+.btn-accent{background:var(--accent);color:#1A1A00;border:none;border-radius:8px;padding:.55rem 1.2rem;font-weight:600;font-size:.875rem;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem;text-decoration:none}
+.btn-accent:hover{background:#F0B233;color:#1A1A00;transform:translateY(-1px)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:.55rem 1.2rem;font-weight:500;font-size:.875rem;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem;text-decoration:none}
+.btn-ghost:hover{border-color:var(--text);color:var(--text);background:var(--surface2)}
+.btn-danger{background:rgba(232,70,58,.15);border:1px solid rgba(232,70,58,.3);color:var(--accent2);border-radius:8px;padding:.4rem .9rem;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-danger:hover{background:var(--accent2);color:#fff}
+.btn-success{background:rgba(46,204,113,.15);border:1px solid rgba(46,204,113,.3);color:var(--green);border-radius:8px;padding:.4rem .9rem;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn-success:hover{background:var(--green);color:#fff}
+.btn-edit{background:rgba(74,158,255,.12);border:1px solid rgba(74,158,255,.25);color:var(--blue);border-radius:8px;padding:.4rem .9rem;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
+.btn-edit:hover{background:var(--blue);color:#fff}
+
+/* ── SEARCH BAR ── */
+.search-wrap{position:relative}
+.search-wrap i{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:var(--muted)}
+.search-wrap .ctrl{padding-left:2.5rem}
+
+/* ── ALERTS ── */
+.alert-mbm{border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.875rem;display:flex;align-items:center;gap:.5rem}
+.alert-success-mbm{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.2);color:#7DEFA7}
+.alert-danger-mbm{background:rgba(232,70,58,.1);border:1px solid rgba(232,70,58,.2);color:#F87878}
+.alert-warning-mbm{background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.2);color:#FAC858}
+.alert-info-mbm{background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.2);color:#7ABFFF}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main-content{margin-left:0}
+  .mobile-toggle{display:block!important}
+}
+.mobile-toggle{display:none;background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer}
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">M</div>
+    <div class="sidebar-logo-text">
+      MBM Admin
+      <small>Control Panel</small>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding-bottom:1rem">
+    <div class="nav-section-label">Overview</div>
+    <a href="{{ url_for('admin.dashboard') }}"
+       class="nav-item {% if request.endpoint=='admin.dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+
+    <div class="nav-section-label">Catalogue</div>
+    <a href="{{ url_for('admin.products') }}"
+       class="nav-item {% if 'product' in request.endpoint %}active{% endif %}">
+      <i class="bi bi-boxes"></i> Products
+    </a>
+    <a href="{{ url_for('admin.inventory') }}"
+       class="nav-item {% if request.endpoint=='admin.inventory' %}active{% endif %}">
+      <i class="bi bi-grid-3x3-gap"></i> Inventory Matrix
+    </a>
+
+    <div class="nav-section-label">Sales</div>
+    <a href="{{ url_for('admin.pos') }}"
+       class="nav-item {% if request.endpoint=='admin.pos' %}active{% endif %}"
+       style="{% if request.endpoint=='admin.pos' %}background:rgba(245,166,35,.15);color:var(--accent){% endif %}">
+      <i class="bi bi-cash-register"></i> POS Billing
+    </a>
+    <a href="{{ url_for('admin.orders') }}"
+       class="nav-item {% if request.endpoint=='admin.orders' %}active{% endif %}">
+      <i class="bi bi-receipt"></i> Orders
+      {% set pending = stats.pending_orders if stats is defined else 0 %}
+      {% if pending > 0 %}<span class="nav-badge">{{ pending }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('admin.orders', status='confirmed') }}"
+       class="nav-item">
+      <i class="bi bi-clock-history"></i> Pending Pickup
+    </a>
+
+    <div class="nav-section-label">Staff</div>
+    <a href="{{ url_for('admin.employees') }}"
+       class="nav-item {% if 'employee' in request.endpoint %}active{% endif %}">
+      <i class="bi bi-people"></i> Employees
+    </a>
+
+        <a href="{{ url_for('admin.notices') }}"
+       class="nav-item {% if request.endpoint=='admin.notices' %}active{% endif %}">
+      <i class="bi bi-megaphone"></i> Notice Board
+    </a>
+    <a href="{{ url_for('admin.leave_requests') }}"
+       class="nav-item {% if request.endpoint=='admin.leave_requests' %}active{% endif %}">
+      <i class="bi bi-calendar-x"></i> Leave Requests
+    </a>
+    <a href="{{ url_for('admin.sales_targets') }}"
+       class="nav-item {% if request.endpoint=='admin.sales_targets' %}active{% endif %}">
+      <i class="bi bi-bullseye"></i> Sales Targets
+    </a>
+    <a href="{{ url_for('admin.training') }}"
+       class="nav-item {% if request.endpoint=='admin.training' %}active{% endif %}">
+      <i class="bi bi-book"></i> Training Hub
+    </a>
+    <div class="nav-section-label">Store</div>
+    <a href="{{ url_for('customer.index') }}" target="_blank" class="nav-item">
+      <i class="bi bi-shop"></i> View Live Shop
+    </a>
+    <a href="{{ url_for('auth.logout') }}" class="nav-item"
+       style="color:var(--accent2)">
+      <i class="bi bi-box-arrow-left"></i> Logout
+    </a>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="store-status">
+      <div class="status-dot"></div>
+      <div>
+        <div style="font-size:.78rem;font-weight:600">Store Online</div>
+        <div style="font-size:.68rem;color:var(--muted)">Main Road, Mantha</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main-content">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:.9rem">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+        <i class="bi bi-list"></i>
+      </button>
+      <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+    </div>
+    <div class="topbar-actions">
+      <a href="{{ url_for('admin.add_product') }}" class="btn-accent" style="font-size:.8rem;padding:.45rem 1rem">
+        <i class="bi bi-plus-lg"></i> Add Product
+      </a>
+      <div class="admin-avatar">{{ current_user.full_name[0] }}</div>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  <div style="padding:.6rem 1.8rem 0">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for cat, msg in messages %}
+        <div class="alert-mbm alert-{{ cat }}-mbm">
+          <i class="bi bi-{% if cat=='success' %}check-circle{% elif cat=='danger' %}exclamation-circle{% elif cat=='warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+          {{ msg }}
+        </div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+  </div>
+
+  <div class="page-body">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

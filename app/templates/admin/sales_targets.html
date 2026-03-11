@@ -1,0 +1,44 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Sales Targets{% endblock %}
+{% block page_title %}Sales Targets — {{ month }}{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head"><h5>Set Monthly Sales Targets</h5></div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Employee</th><th>Target (₹)</th><th>Achieved (₹)</th><th>Commission</th><th>Progress</th><th>Set Target</th></tr></thead>
+      <tbody>
+        {% for emp in employees %}
+        {% set t = targets.get(emp.id) %}
+        {% set s = salaries.get(emp.id) %}
+        {% set achieved = (s.commission_earned or 0) / (emp.commission_rate or 0.01) if (s and emp.commission_rate) else 0 %}
+        {% set target_val = t.target_amount if t else 0 %}
+        {% set pct = [(achieved/target_val*100)|int, 100]|min if target_val > 0 else 0 %}
+        <tr>
+          <td>
+            <div style="font-weight:600">{{ emp.user.full_name }}</div>
+            <div style="font-size:.72rem;color:var(--muted)">{{ emp.designation or 'Staff' }}</div>
+          </td>
+          <td style="font-weight:700;font-family:var(--ff-mono)">₹{{ "%.0f"|format(target_val) }}</td>
+          <td style="font-weight:700;font-family:var(--ff-mono);color:var(--green)">₹{{ "%.0f"|format(achieved) }}</td>
+          <td style="font-family:var(--ff-mono);color:var(--purple)">₹{{ "%.0f"|format(s.commission_earned or 0) if s else '0' }}</td>
+          <td style="min-width:120px">
+            <div class="prog-wrap" style="height:6px"><div class="prog-fill" style="width:{{ pct }}%;background:{% if pct>=100 %}var(--green){% elif pct>=60 %}var(--blue){% else %}var(--accent2){% endif %}"></div></div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">{{ pct }}%</div>
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.set_target') }}" style="display:flex;gap:.4rem">
+              <input type="hidden" name="employee_id" value="{{ emp.id }}">
+              <input type="number" name="target_amount" class="ctrl" style="padding:.3rem .6rem;font-size:.82rem;width:110px" value="{{ target_val }}" placeholder="₹ target">
+              <button type="submit" class="btn-success" style="padding:.3rem .7rem">Set</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No employees yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

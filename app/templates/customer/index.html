@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% block title %}Shop{% endblock %}
+
+{% block extra_css %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root{
+  --ink:#1C1108;--sand:#F5EDD9;--rust:#B5451B;
+  --jade:#1B6B4A;--navy:#0F1F3D;--fog:#EDE8DF;
+  --gold:#C9922A;--gold2:#F0C060;
+  --ff-disp:'Cormorant Garamond',Georgia,serif;
+  --ff-body:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-body);background:var(--sand);color:var(--ink)}
+
+/* ── SHOP HERO BANNER ── */
+.shop-hero{
+  background:linear-gradient(105deg,var(--navy) 0%,#1a3560 50%,var(--rust) 100%);
+  padding:4rem 0 3rem;position:relative;overflow:hidden;
+}
+.shop-hero::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.shop-hero-title{
+  font-family:var(--ff-disp);font-size:clamp(2rem,5vw,4rem);
+  color:#fff;line-height:1.1;font-weight:600;
+}
+.shop-hero-title em{color:var(--gold2);font-style:italic}
+.shop-hero-sub{color:rgba(255,255,255,.6);font-size:.95rem;margin-top:.6rem;font-weight:300}
+.search-bar-wrap{position:relative;max-width:460px}
+.search-bar{
+  width:100%;padding:.85rem 1rem .85rem 3rem;
+  border:2px solid rgba(255,255,255,.2);border-radius:50px;
+  background:rgba(255,255,255,.1);backdrop-filter:blur(8px);
+  color:#fff;font-size:.95rem;font-family:var(--ff-body);
+  transition:border-color .2s;outline:none;
+}
+.search-bar::placeholder{color:rgba(255,255,255,.5)}
+.search-bar:focus{border-color:var(--gold2)}
+.search-icon{position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.5)}
+.cart-pill{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:var(--gold);color:#fff;font-weight:600;
+  border-radius:50px;padding:.6rem 1.4rem;font-size:.9rem;
+  text-decoration:none;transition:all .25s;box-shadow:0 4px 20px rgba(201,146,42,.4);
+}
+.cart-pill:hover{background:var(--gold2);color:var(--ink);transform:translateY(-2px)}
+.cart-pill .badge-count{
+  background:#fff;color:var(--rust);border-radius:50px;
+  font-size:.75rem;padding:.1rem .5rem;font-weight:700;min-width:22px;text-align:center;
+}
+
+/* ── CATEGORY PILLS ── */
+.cat-strip{background:#fff;border-bottom:1px solid var(--fog);padding:.75rem 0;position:sticky;top:0;z-index:100}
+.cat-scroll{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:2px}
+.cat-scroll::-webkit-scrollbar{height:3px}
+.cat-scroll::-webkit-scrollbar-thumb{background:var(--gold);border-radius:3px}
+.cat-pill{
+  white-space:nowrap;padding:.4rem 1.1rem;border-radius:50px;font-size:.82rem;
+  font-weight:500;border:2px solid var(--fog);background:transparent;
+  color:#666;cursor:pointer;text-decoration:none;transition:all .2s;
+}
+.cat-pill:hover,.cat-pill.active{
+  background:var(--navy);border-color:var(--navy);color:#fff;
+}
+
+/* ── SORT BAR ── */
+.sort-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:1.2rem 0 .5rem}
+.sort-bar label{font-size:.82rem;color:#888;font-weight:500}
+.sort-select{
+  border:1.5px solid var(--fog);border-radius:8px;padding:.35rem .8rem;
+  font-family:var(--ff-body);font-size:.85rem;background:#fff;color:var(--ink);
+  cursor:pointer;outline:none;
+}
+.results-count{margin-left:auto;font-size:.83rem;color:#999}
+
+/* ── PRODUCT GRID ── */
+.product-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:1.5rem;padding:1rem 0 3rem;
+}
+
+/* ── PRODUCT CARD ── */
+.p-card{
+  background:#fff;border-radius:16px;overflow:hidden;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s;
+  position:relative;cursor:pointer;
+  border:1px solid rgba(0,0,0,.05);
+}
+.p-card:hover{transform:translateY(-8px);box-shadow:0 20px 50px rgba(15,31,61,.12)}
+.p-card-img-wrap{
+  position:relative;overflow:hidden;
+  aspect-ratio:3/4;background:var(--fog);
+}
+.p-card-img-wrap img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .5s cubic-bezier(.25,.46,.45,.94);
+}
+.p-card:hover .p-card-img-wrap img{transform:scale(1.07)}
+
+/* Placeholder when no image */
+.img-placeholder{
+  width:100%;height:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.5rem;
+  background:linear-gradient(135deg,var(--fog),#e8e0d0);
+}
+.img-placeholder span{font-size:3rem}
+.img-placeholder small{font-size:.75rem;color:#999;font-family:var(--ff-body)}
+
+.p-card-badge{
+  position:absolute;top:.75rem;left:.75rem;
+  background:var(--rust);color:#fff;
+  font-size:.68rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+  padding:.25rem .65rem;border-radius:50px;
+}
+.p-card-badge.brand{background:var(--navy)}
+
+.quick-add{
+  position:absolute;bottom:.75rem;right:.75rem;
+  background:rgba(255,255,255,.95);backdrop-filter:blur(4px);
+  border:none;border-radius:50px;width:38px;height:38px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.12);
+  transform:translateY(10px);opacity:0;
+  transition:all .25s;text-decoration:none;color:var(--ink);
+}
+.p-card:hover .quick-add{transform:translateY(0);opacity:1}
+
+.p-card-body{padding:1rem 1rem .9rem}
+.p-brand{
+  font-size:.7rem;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--gold);margin-bottom:.25rem;
+}
+.p-name{
+  font-family:var(--ff-disp);font-size:1.05rem;font-weight:600;
+  color:var(--ink);line-height:1.3;margin-bottom:.6rem;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.p-price-row{display:flex;align-items:baseline;gap:.6rem}
+.p-price{font-size:1.1rem;font-weight:700;color:var(--navy)}
+.p-mrp{font-size:.8rem;color:#bbb;text-decoration:line-through}
+.p-discount{font-size:.75rem;color:var(--jade);font-weight:600}
+.size-chips{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.6rem}
+.sz{
+  font-size:.68rem;border:1px solid #ddd;border-radius:4px;
+  padding:.15rem .4rem;color:#888;background:#fafafa;
+}
+.sz.oos{opacity:.4;text-decoration:line-through}
+
+/* ── EMPTY STATE ── */
+.empty-state{
+  text-align:center;padding:5rem 1rem;
+}
+.empty-state .empty-icon{font-size:4rem;margin-bottom:1rem}
+.empty-state h3{font-family:var(--ff-disp);font-size:1.8rem;color:var(--navy);margin-bottom:.5rem}
+.empty-state p{color:#999;margin-bottom:1.5rem}
+
+/* ── FADE IN ANIMATION ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.p-card{animation:fadeUp .5s ease both}
+.p-card:nth-child(1){animation-delay:.05s}
+.p-card:nth-child(2){animation-delay:.1s}
+.p-card:nth-child(3){animation-delay:.15s}
+.p-card:nth-child(4){animation-delay:.2s}
+.p-card:nth-child(5){animation-delay:.25s}
+.p-card:nth-child(6){animation-delay:.3s}
+.p-card:nth-child(n+7){animation-delay:.35s}
+
+/* ── FLOATING CART ── */
+.float-cart{
+  position:fixed;bottom:2rem;right:2rem;
+  background:linear-gradient(135deg,var(--navy),#1a3560);
+  color:#fff;border-radius:50px;padding:.8rem 1.5rem;
+  display:flex;align-items:center;gap:.6rem;
+  box-shadow:0 8px 30px rgba(15,31,61,.35);
+  text-decoration:none;font-weight:600;font-size:.9rem;
+  transition:all .3s;z-index:999;
+}
+.float-cart:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(15,31,61,.45);color:#fff}
+.float-cart .fc-count{
+  background:var(--gold);color:#fff;border-radius:50%;
+  width:22px;height:22px;font-size:.72rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* Responsive */
+@media(max-width:576px){
+  .product-grid{grid-template-columns:repeat(2,1fr);gap:1rem}
+  .p-card-body{padding:.75rem}
+  .p-name{font-size:.9rem}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── SHOP HERO ── -->
+<section class="shop-hero">
+  <div class="container">
+    <div class="row align-items-center gy-3">
+      <div class="col-lg-6">
+        <h1 class="shop-hero-title">
+          Discover <em>Fashion</em><br>Made for Mantha
+        </h1>
+        <p class="shop-hero-sub">{{ products|length }} styles in stock. Buy online, pick up at Main Road.</p>
+      </div>
+      <div class="col-lg-6">
+        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-3">
+          <form method="GET" action="{{ url_for('customer.index') }}" class="search-bar-wrap flex-grow-1">
+            <i class="bi bi-search search-icon"></i>
+            <input class="search-bar" type="text" name="q"
+                   placeholder="Search shirts, kurtas, brands…"
+                   value="{{ search }}">
+            <!-- preserve other filters -->
+            {% if active_cat != 'all' %}<input type="hidden" name="cat" value="{{ active_cat }}">{% endif %}
+          </form>
+          <a href="{{ url_for('customer.cart') }}" class="cart-pill">
+            <i class="bi bi-bag"></i> Cart
+            {% if cart_count > 0 %}
+              <span class="badge-count">{{ cart_count }}</span>
+            {% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CATEGORY STRIP ── -->
+<div class="cat-strip">
+  <div class="container">
+    <div class="cat-scroll">
+      <a href="{{ url_for('customer.index', sort=sort) }}"
+         class="cat-pill {% if active_cat == 'all' %}active{% endif %}">
+        ✦ All Items
+      </a>
+      {% for cat in categories %}
+      <a href="{{ url_for('customer.index', cat=cat.slug, sort=sort) }}"
+         class="cat-pill {% if active_cat == cat.slug %}active{% endif %}">
+        {{ cat.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN SHOP BODY ── -->
+<div class="container">
+
+  <!-- Sort + results bar -->
+  <div class="sort-bar">
+    <!-- Brand filter -->
+    <form method="GET" id="filterForm" style="display:contents">
+      {% if active_cat != 'all' %}<input type="hidden" name="cat" value="{{ active_cat }}">{% endif %}
+      {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
+
+      <label for="brandSel">Brand:</label>
+      <select class="sort-select" name="brand" id="brandSel"
+              onchange="document.getElementById('filterForm').submit()">
+        <option value="all" {% if active_brand=='all' %}selected{% endif %}>All Brands</option>
+        {% for b in brands %}
+        <option value="{{ b.id }}" {% if active_brand==b.id|string %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="sortSel">Sort:</label>
+      <select class="sort-select" name="sort" id="sortSel"
+              onchange="document.getElementById('filterForm').submit()">
+        <option value="newest"     {% if sort=='newest' %}selected{% endif %}>Newest First</option>
+        <option value="price_low"  {% if sort=='price_low' %}selected{% endif %}>Price: Low → High</option>
+        <option value="price_high" {% if sort=='price_high' %}selected{% endif %}>Price: High → Low</option>
+      </select>
+    </form>
+
+    <span class="results-count">
+      <strong>{{ products|length }}</strong> product{% if products|length != 1 %}s{% endif %}
+      {% if search %}for "<em>{{ search }}</em>"{% endif %}
+    </span>
+  </div>
+
+  <!-- Product grid -->
+  {% if products %}
+  <div class="product-grid">
+    {% for p in products %}
+    {% set has_stock = p.variants | selectattr('stock_quantity', 'gt', 0) | list %}
+    <div class="p-card">
+      <a href="{{ url_for('customer.product_detail', product_id=p.id) }}" style="text-decoration:none;color:inherit">
+
+        <!-- Image -->
+        <div class="p-card-img-wrap">
+          {% if p.image_filename %}
+            <img src="{{ url_for('static', filename='images/products/' + p.image_filename) }}"
+                 alt="{{ p.name }}" loading="lazy">
+          {% else %}
+            <div class="img-placeholder">
+              <span>{% if 'shirt' in p.name.lower() %}👔
+                    {% elif 'trouser' in p.name.lower() or 'pant' in p.name.lower() %}👖
+                    {% elif 'kurta' in p.name.lower() %}🧣
+                    {% elif 'kid' in p.name.lower() %}👕
+                    {% else %}🛍️{% endif %}</span>
+              <small>{{ p.category.name }}</small>
+            </div>
+          {% endif %}
+
+          <!-- Badge -->
+          {% if p.brand.name == 'k satish' %}
+            <span class="p-card-badge brand">k satish</span>
+          {% elif p.mrp and p.price < p.mrp %}
+            {% set disc = ((p.mrp - p.price) / p.mrp * 100)|int %}
+            <span class="p-card-badge">{{ disc }}% OFF</span>
+          {% endif %}
+
+          {% if not has_stock %}
+            <span class="p-card-badge" style="background:#888;left:auto;right:.75rem">Out of Stock</span>
+          {% endif %}
+        </div>
+
+      </a>
+
+      <!-- Quick view button -->
+      <a href="{{ url_for('customer.product_detail', product_id=p.id) }}"
+         class="quick-add" title="View Product">👁</a>
+
+      <!-- Info -->
+      <div class="p-card-body">
+        <div class="p-brand">{{ p.brand.name }}</div>
+        <a href="{{ url_for('customer.product_detail', product_id=p.id) }}"
+           style="text-decoration:none">
+          <div class="p-name">{{ p.name }}</div>
+        </a>
+        <div class="p-price-row">
+          <span class="p-price">₹{{ "%.0f"|format(p.price) }}</span>
+          {% if p.mrp and p.mrp > p.price %}
+            <span class="p-mrp">₹{{ "%.0f"|format(p.mrp) }}</span>
+            <span class="p-discount">{{ ((p.mrp-p.price)/p.mrp*100)|int }}% off</span>
+          {% endif %}
+        </div>
+        <!-- Size chips -->
+        <div class="size-chips">
+          {% for v in p.variants %}
+            <span class="sz {% if v.is_out_of_stock %}oos{% endif %}">{{ v.size }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <!-- Empty state -->
+  <div class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <h3>No products found</h3>
+    <p>Try a different category or search term</p>
+    <a href="/about">About Us</a>
+    <a href="{{ url_for('customer.index') }}"
+       class="btn btn-maroon rounded-pill px-4">Clear Filters</a>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Floating cart button (only when items in cart) -->
+{% if cart_count > 0 %}
+<a href="{{ url_for('customer.cart') }}" class="float-cart">
+  <i class="bi bi-bag-check"></i>
+  View Cart
+  <span class="fc-count">{{ cart_count }}</span>
+</a>
+{% endif %}
+
+{% endblock %}

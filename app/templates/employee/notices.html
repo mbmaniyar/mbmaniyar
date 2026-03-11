@@ -1,0 +1,33 @@
+{% extends 'employee/base_employee.html' %}
+{% block title %}Notice Board{% endblock %}
+{% block page_title %}Notice Board{% endblock %}
+{% block content %}
+<div style="max-width:780px">
+  {% if notices %}
+    {% for n in notices %}
+    <div style="background:#fff;border-radius:16px;border:1px solid var(--border);margin-bottom:1rem;overflow:hidden;border-left:4px solid {% if n.priority=='urgent' %}var(--red){% elif n.priority=='important' %}var(--orange){% else %}var(--accent){% endif %}">
+      <div style="padding:1.1rem 1.4rem">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.8rem;margin-bottom:.5rem">
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <span style="font-size:1.2rem">{% if n.priority=='urgent' %}🚨{% elif n.priority=='important' %}⚠️{% else %}📌{% endif %}</span>
+            <h5 style="font-size:1rem;font-weight:700;margin:0">{{ n.title }}</h5>
+          </div>
+          <span class="e-badge {% if n.priority=='urgent' %}eb-red{% elif n.priority=='important' %}eb-orange{% else %}eb-blue{% endif %}">{{ n.priority|title }}</span>
+        </div>
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.6;margin:0">{{ n.body }}</p>
+        <div style="font-size:.73rem;color:var(--muted);margin-top:.7rem">
+          Posted {{ n.created_at.strftime('%d %b %Y, %I:%M %p') }}
+          {% if n.author %} by {{ n.author.full_name }}{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div style="text-align:center;padding:5rem;color:var(--muted)">
+    <i class="bi bi-megaphone" style="font-size:3rem;display:block;margin-bottom:1rem;opacity:.3"></i>
+    <h4 style="font-weight:700">No notices yet</h4>
+    <p>Your manager will post announcements here.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

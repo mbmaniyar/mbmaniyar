@@ -1,0 +1,44 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Leave Requests{% endblock %}
+{% block page_title %}Leave Requests{% endblock %}
+{% block content %}
+<div style="display:flex;gap:.5rem;margin-bottom:1.5rem">
+  {% for s,lbl in [('pending','⏳ Pending'),('approved','✅ Approved'),('rejected','❌ Rejected'),('all','All')] %}
+  <a href="{{ url_for('admin.leave_requests', status=s) }}"
+     style="padding:.4rem 1rem;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;
+            {% if status==s %}background:var(--accent);color:#1A1A00{% else %}background:var(--surface2);color:var(--muted){% endif %}">{{ lbl }}</a>
+  {% endfor %}
+</div>
+<div class="panel">
+  <div class="panel-head"><h5>{{ requests|length }} Request{% if requests|length!=1 %}s{% endif %}</h5></div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for r in requests %}
+        <tr>
+          <td style="font-weight:600">{{ r.employee.user.full_name }}<br><span style="font-size:.72rem;color:var(--muted)">{{ r.employee.employee_code }}</span></td>
+          <td><span class="badge-status badge-confirmed">{{ r.leave_type|title }}</span></td>
+          <td>{{ r.start_date.strftime('%d %b %Y') }}</td>
+          <td>{{ r.end_date.strftime('%d %b %Y') }}</td>
+          <td style="text-align:center;font-weight:700">{{ r.days }}</td>
+          <td style="font-size:.82rem;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.reason or '—' }}</td>
+          <td><span class="badge-status {% if r.status=='approved' %}badge-completed{% elif r.status=='rejected' %}badge-pending{% else %}badge-confirmed{% endif %}">{{ r.status|title }}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.update_leave', lid=r.id) }}" style="display:flex;gap:.3rem;align-items:center">
+              <select name="status" class="ctrl" style="padding:.3rem .5rem;font-size:.78rem;width:110px">
+                {% for s in ['pending','approved','rejected'] %}<option value="{{ s }}" {% if r.status==s %}selected{% endif %}>{{ s|title }}</option>{% endfor %}
+              </select>
+              <input type="text" name="admin_note" class="ctrl" style="padding:.3rem .5rem;font-size:.78rem;width:120px" placeholder="Note…">
+              <button type="submit" class="btn-success" style="padding:.3rem .6rem">✓</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:3rem;color:var(--muted)">No requests</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

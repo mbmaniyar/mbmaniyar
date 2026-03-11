@@ -1,0 +1,141 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Products{% endblock %}
+{% block page_title %}Product Management{% endblock %}
+{% block content %}
+
+<!-- Top action row -->
+<div class="d-flex flex-wrap gap-3 mb-4 align-items-center">
+  <form method="GET" style="display:contents">
+    <div class="search-wrap" style="flex:1;min-width:200px">
+      <i class="bi bi-search"></i>
+      <input type="text" name="q" value="{{ search }}" class="ctrl" placeholder="Search products…">
+    </div>
+    <select name="cat" class="ctrl" style="width:160px" onchange="this.form.submit()">
+      <option value="all">All Categories</option>
+      {% for c in categories %}<option value="{{ c.id }}" {% if active_cat==c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+    <select name="brand" class="ctrl" style="width:160px" onchange="this.form.submit()">
+      <option value="all">All Brands</option>
+      {% for b in brands %}<option value="{{ b.id }}" {% if active_brand==b.id|string %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn-ghost"><i class="bi bi-funnel"></i> Filter</button>
+  </form>
+  <a href="{{ url_for('admin.add_product') }}" class="btn-accent ms-auto"><i class="bi bi-plus-lg"></i> Add Product</a>
+</div>
+
+<!-- Products table -->
+<div class="panel">
+  <div class="panel-head">
+    <h5><i class="bi bi-boxes me-2"></i>{{ products|length }} Products</h5>
+    <div style="display:flex;gap:.5rem">
+      <!-- Add Category -->
+      <button class="btn-ghost" style="font-size:.78rem" onclick="document.getElementById('catModal').style.display='flex'">+ Category</button>
+      <!-- Add Brand -->
+      <button class="btn-ghost" style="font-size:.78rem" onclick="document.getElementById('brandModal').style.display='flex'">+ Brand</button>
+    </div>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead>
+        <tr><th>Product</th><th>SKU</th><th>Category</th><th>Brand</th><th>Price</th><th>Sizes / Stock</th><th>Online</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <div style="width:44px;height:44px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">
+                {% if p.image_filename %}<img src="{{ url_for('static',filename='images/products/'+p.image_filename) }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">
+                {% elif 'shirt' in p.name.lower() %}👔{% elif 'trouser' in p.name.lower() %}👖{% elif 'kurta' in p.name.lower() %}🧣{% else %}🛍️{% endif %}
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:.88rem">{{ p.name }}</div>
+                <div style="font-size:.72rem;color:var(--muted)">₹{{ "%.0f"|format(p.price) }}{% if p.mrp %} / MRP ₹{{ "%.0f"|format(p.mrp) }}{% endif %}</div>
+              </div>
+            </div>
+          </td>
+          <td><span style="font-family:var(--ff-mono);font-size:.78rem;color:var(--muted)">{{ p.sku }}</span></td>
+          <td style="font-size:.85rem">{{ p.category.name }}</td>
+          <td style="font-size:.85rem">{{ p.brand.name }}</td>
+          <td style="font-weight:600">₹{{ "%.0f"|format(p.price) }}</td>
+          <td>
+            {% for v in p.variants %}
+            <span style="display:inline-block;margin:.1rem;padding:.15rem .45rem;border-radius:4px;font-size:.7rem;font-weight:600;
+              background:{% if v.is_out_of_stock %}rgba(232,70,58,.15){% elif v.is_low_stock %}rgba(245,166,35,.15){% else %}rgba(46,204,113,.1){% endif %};
+              color:{% if v.is_out_of_stock %}var(--accent2){% elif v.is_low_stock %}var(--accent){% else %}var(--green){% endif %}">
+              {{ v.size }}: {{ v.stock_quantity }}
+            </span>
+            {% endfor %}
+          </td>
+          <td>
+            <button onclick="toggleOnline({{ p.id }}, this)" data-online="{{ p.is_online|lower }}"
+                    class="badge-status {% if p.is_online %}badge-online{% else %}badge-offline{% endif %}"
+                    style="border:none;cursor:pointer;background:{% if p.is_online %}rgba(46,204,113,.15){% else %}rgba(107,116,148,.15){% endif %}">
+              {{ 'Online' if p.is_online else 'Hidden' }}
+            </button>
+          </td>
+          <td>
+            <div style="display:flex;gap:.4rem;flex-wrap:nowrap">
+              <a href="{{ url_for('admin.edit_product', pid=p.id) }}" class="btn-edit"><i class="bi bi-pencil"></i></a>
+              <form method="POST" action="{{ url_for('admin.delete_product', pid=p.id) }}"
+                    onsubmit="return confirm('Remove {{ p.name }} from shop?')">
+                <button type="submit" class="btn-danger"><i class="bi bi-trash3"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:3rem;color:var(--muted)">
+          No products yet. <a href="{{ url_for('admin.add_product') }}" style="color:var(--accent)">Add your first product →</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div id="catModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
+  <div class="panel" style="width:360px;padding:1.5rem">
+    <h5 style="margin-bottom:1rem;font-family:var(--ff-head)">Add Category</h5>
+    <form method="POST" action="{{ url_for('admin.add_category') }}">
+      <label class="ctrl-label">Category Name</label>
+      <input type="text" name="name" class="ctrl mb-3" placeholder="e.g. Winter Wear" required>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" class="btn-ghost" onclick="document.getElementById('catModal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn-accent">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Brand Modal -->
+<div id="brandModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
+  <div class="panel" style="width:360px;padding:1.5rem">
+    <h5 style="margin-bottom:1rem;font-family:var(--ff-head)">Add Brand</h5>
+    <form method="POST" action="{{ url_for('admin.add_brand') }}">
+      <label class="ctrl-label">Brand Name</label>
+      <input type="text" name="name" class="ctrl mb-3" placeholder="e.g. Wills Lifestyle" required>
+      <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin-bottom:1rem;font-size:.875rem">
+        <input type="checkbox" name="is_special_tracked"> Enable inventory matrix tracking
+      </label>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" class="btn-ghost" onclick="document.getElementById('brandModal').style.display='none'">Cancel</button>
+        <button type="submit" class="btn-accent">Add</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+async function toggleOnline(pid, btn) {
+  const res = await fetch(`/admin/products/toggle/${pid}`, {method:'POST'});
+  const data = await res.json();
+  btn.textContent = data.is_online ? 'Online' : 'Hidden';
+  btn.className = `badge-status ${data.is_online ? 'badge-online' : 'badge-offline'}`;
+  btn.style.background = data.is_online ? 'rgba(46,204,113,.15)' : 'rgba(107,116,148,.15)';
+}
+</script>
+{% endblock %}

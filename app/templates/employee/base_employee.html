@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Staff{% endblock %} | MBM Portal</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F5FB;--sidebar:#1B2B4B;--sidebar-accent:#243460;
+  --accent:#3B7DFF;--gold:#F5A623;--green:#10B981;
+  --red:#EF4444;--purple:#8B5CF6;--orange:#F97316;
+  --text:#1A2340;--muted:#64748B;--border:#E2E8F0;
+  --card:#FFFFFF;
+  --ff:'Outfit',sans-serif;--ff-mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+
+/* SIDEBAR */
+.e-sidebar{width:245px;min-height:100vh;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;position:fixed;left:0;top:0;bottom:0;z-index:200;overflow-y:auto}
+.e-sidebar::-webkit-scrollbar{width:3px}
+.e-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1)}
+
+.sb-top{padding:1.4rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-logo{display:flex;align-items:center;gap:.8rem;margin-bottom:1rem;text-decoration:none}
+.sb-logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#2563EB);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#fff;flex-shrink:0}
+.sb-logo-text{font-size:.95rem;font-weight:700;color:#fff;line-height:1.2}
+.sb-logo-text small{font-size:.62rem;color:rgba(255,255,255,.4);font-weight:400;letter-spacing:1px;display:block}
+
+.sb-profile{background:rgba(255,255,255,.07);border-radius:14px;padding:.9rem;display:flex;align-items:center;gap:.75rem}
+.sb-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#E8903A);display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;color:#fff;flex-shrink:0}
+.sb-name{font-size:.85rem;font-weight:700;color:#fff}
+.sb-role{font-size:.7rem;color:rgba(255,255,255,.45);margin-top:.1rem}
+.sb-code{display:inline-block;margin-top:.25rem;font-size:.63rem;font-family:var(--ff-mono);background:rgba(59,125,255,.25);color:#93C5FD;border-radius:4px;padding:.1rem .45rem}
+
+.sb-nav{padding:.6rem 0}
+.sb-section{font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:.8rem 1.2rem .3rem}
+.sb-link{display:flex;align-items:center;gap:.75rem;padding:.58rem 1.2rem;margin:.05rem .7rem;border-radius:9px;color:rgba(255,255,255,.5);font-size:.855rem;font-weight:500;text-decoration:none;transition:all .2s}
+.sb-link:hover{background:rgba(255,255,255,.07);color:#fff}
+.sb-link.active{background:rgba(59,125,255,.2);color:var(--accent);border:1px solid rgba(59,125,255,.2)}
+.sb-link i{font-size:.95rem;width:18px;text-align:center}
+.sb-badge{margin-left:auto;background:var(--red);color:#fff;border-radius:50px;font-size:.62rem;padding:.1rem .45rem;font-weight:700}
+
+.sb-bottom{margin-top:auto;padding:1rem;border-top:1px solid rgba(255,255,255,.06)}
+.sb-logout{display:flex;align-items:center;gap:.6rem;color:rgba(255,255,255,.3);font-size:.83rem;text-decoration:none;padding:.5rem .7rem;border-radius:8px;transition:all .2s}
+.sb-logout:hover{background:rgba(239,68,68,.1);color:var(--red)}
+
+/* MAIN */
+.e-main{margin-left:245px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+.e-topbar{background:#fff;border-bottom:1px solid var(--border);padding:.85rem 1.8rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.topbar-left h2{font-size:1.1rem;font-weight:700;margin:0}
+.topbar-right{display:flex;align-items:center;gap:.8rem}
+.topbar-date{font-size:.8rem;color:var(--muted)}
+
+/* CLOCK WIDGET */
+.clock-widget{display:flex;align-items:center;gap:.5rem;background:#F8FAFF;border:1px solid var(--border);border-radius:10px;padding:.4rem .9rem;cursor:pointer;transition:all .2s;font-size:.82rem;font-weight:600}
+.clock-widget:hover{border-color:var(--accent);color:var(--accent)}
+.clock-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.e-body{padding:1.6rem;flex:1}
+
+/* CARDS */
+.e-card{background:var(--card);border-radius:16px;border:1px solid var(--border);box-shadow:0 1px 8px rgba(0,0,0,.04)}
+.e-card-head{padding:.9rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.e-card-head h5{font-size:.93rem;font-weight:700;margin:0}
+.e-card-body{padding:1.2rem 1.4rem}
+
+/* STAT */
+.e-stat{background:var(--card);border-radius:14px;padding:1.1rem 1.3rem;border:1px solid var(--border);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.e-stat:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.e-stat-lbl{font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+.e-stat-val{font-size:1.7rem;font-weight:800;line-height:1}
+.e-stat-sub{font-size:.73rem;color:var(--muted);margin-top:.3rem}
+.e-stat-icon{position:absolute;top:1rem;right:1.1rem;font-size:1.5rem;opacity:.1}
+
+/* BADGES */
+.e-badge{display:inline-flex;align-items:center;gap:.25rem;border-radius:50px;padding:.22rem .65rem;font-size:.68rem;font-weight:600}
+.eb-green{background:#D1FAE5;color:#065F46}
+.eb-blue{background:#DBEAFE;color:#1E40AF}
+.eb-yellow{background:#FEF3C7;color:#92400E}
+.eb-red{background:#FEE2E2;color:#991B1B}
+.eb-gray{background:#F1F5F9;color:#475569}
+.eb-purple{background:#EDE9FE;color:#5B21B6}
+.eb-orange{background:#FEF3C7;color:#9A3412}
+
+/* FLASH */
+.flash-wrap{padding:.4rem 1.8rem 0}
+.flash-e{border-radius:10px;padding:.65rem 1rem;margin-bottom:.6rem;font-size:.855rem;display:flex;align-items:center;gap:.5rem;border:1px solid transparent}
+.f-success{background:#ECFDF5;border-color:#A7F3D0;color:#065F46}
+.f-danger{background:#FEF2F2;border-color:#FECACA;color:#991B1B}
+.f-warning{background:#FFFBEB;border-color:#FDE68A;color:#92400E}
+.f-info{background:#EFF6FF;border-color:#BFDBFE;color:#1E40AF}
+
+/* PROGRESS BAR */
+.prog-wrap{background:#E2E8F0;border-radius:50px;overflow:hidden;height:8px}
+.prog-fill{height:100%;border-radius:50px;transition:width .8s ease}
+
+@media(max-width:768px){.e-sidebar{transform:translateX(-100%)}.e-main{margin-left:0}}
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="e-sidebar">
+  <div class="sb-top">
+    <a href="{{ url_for('employee.dashboard') }}" class="sb-logo">
+      <div class="sb-logo-icon">M</div>
+      <div class="sb-logo-text">MBM Staff<small>Employee Portal</small></div>
+    </a>
+    {% set emp = current_user.employee_profile %}
+    {% if emp %}
+    <div class="sb-profile">
+      <div class="sb-avatar">{{ current_user.full_name[0] }}</div>
+      <div style="min-width:0">
+        <div class="sb-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ current_user.full_name }}</div>
+        <div class="sb-role">{{ emp.designation or 'Staff' }}</div>
+        <span class="sb-code">{{ emp.employee_code }}</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="sb-nav">
+    <div class="sb-section">Main</div>
+    <a href="{{ url_for('employee.dashboard') }}" class="sb-link {% if request.endpoint=='employee.dashboard' %}active{% endif %}">
+      <i class="bi bi-house-fill"></i> Dashboard
+    </a>
+    <a href="{{ url_for('employee.profile') }}" class="sb-link {% if request.endpoint=='employee.profile' %}active{% endif %}">
+      <i class="bi bi-person-circle"></i> My Profile
+    </a>
+
+    <div class="sb-section">Work</div>
+    <a href="{{ url_for('employee.schedule') }}" class="sb-link {% if request.endpoint=='employee.schedule' %}active{% endif %}">
+      <i class="bi bi-calendar3"></i> My Schedule
+    </a>
+    <a href="{{ url_for('employee.tasks') }}" class="sb-link {% if request.endpoint=='employee.tasks' %}active{% endif %}">
+      <i class="bi bi-check2-square"></i> Daily Tasks
+    </a>
+    <a href="{{ url_for('employee.leave') }}" class="sb-link {% if request.endpoint=='employee.leave' %}active{% endif %}">
+      <i class="bi bi-calendar-x"></i> Leave
+    </a>
+
+    <div class="sb-section">Finance</div>
+    <a href="{{ url_for('employee.salary') }}" class="sb-link {% if request.endpoint=='employee.salary' %}active{% endif %}">
+      <i class="bi bi-wallet2"></i> Salary & Commission
+    </a>
+
+    <div class="sb-section">Store</div>
+    <a href="{{ url_for('employee.notices') }}" class="sb-link {% if request.endpoint=='employee.notices' %}active{% endif %}">
+      <i class="bi bi-megaphone"></i> Notice Board
+    </a>
+    <a href="{{ url_for('employee.training') }}" class="sb-link {% if request.endpoint in ('employee.training','employee.training_detail') %}active{% endif %}">
+      <i class="bi bi-book-half"></i> Training Hub
+    </a>
+  </div>
+
+  <div class="sb-bottom">
+    <a href="{{ url_for('auth.logout') }}" class="sb-logout">
+      <i class="bi bi-box-arrow-left"></i> Sign Out
+    </a>
+  </div>
+</nav>
+
+<div class="e-main">
+  <div class="e-topbar">
+    <div class="topbar-left">
+      <h2>{% block page_title %}Dashboard{% endblock %}</h2>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date"><i class="bi bi-calendar3 me-1"></i>{{ now().strftime('%a, %d %b %Y') }}</div>
+      <div class="clock-widget" id="clockWidget" onclick="doClock()">
+        <span class="clock-dot" id="clockDot"></span>
+        <span id="clockText">Clock In</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flash-wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for cat, msg in messages %}
+      <div class="flash-e f-{{ cat }}"><i class="bi bi-info-circle"></i>{{ msg }}</div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+  </div>
+
+  <div class="e-body">{% block content %}{% endblock %}</div>
+</div>
+
+<div id="clockToast" style="position:fixed;bottom:2rem;right:2rem;background:#1B2B4B;color:#fff;padding:.8rem 1.4rem;border-radius:12px;font-size:.875rem;font-weight:600;z-index:9999;display:none;box-shadow:0 8px 30px rgba(0,0,0,.2)"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+async function doClock() {
+  const res  = await fetch('/staff/clock', {method:'POST'});
+  const data = await res.json();
+  const toast = document.getElementById('clockToast');
+  const dot   = document.getElementById('clockDot');
+  const txt   = document.getElementById('clockText');
+  if (data.action === 'clocked_in') {
+    toast.textContent = `✅ Clocked in at ${data.time}`;
+    dot.style.background = 'var(--green)';
+    txt.textContent = 'Clocked In';
+  } else if (data.action === 'clocked_out') {
+    toast.textContent = `👋 Clocked out at ${data.time} — ${data.hours}h worked`;
+    dot.style.background = '#94A3B8';
+    txt.textContent = 'Clocked Out';
+  } else {
+    toast.textContent = data.msg || 'Already recorded today';
+  }
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display='none', 3000);
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

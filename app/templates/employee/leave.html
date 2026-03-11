@@ -1,0 +1,88 @@
+{% extends 'employee/base_employee.html' %}
+{% block title %}Leave{% endblock %}
+{% block page_title %}Leave Management{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <!-- Leave balance -->
+    <div class="e-card mb-4">
+      <div class="e-card-head"><h5>Leave Balance ({{ today.year }})</h5></div>
+      <div class="e-card-body">
+        {% for lbl, bal, used, color in [('Casual Leave', balance_casual, used_casual, 'var(--accent)'), ('Sick Leave', balance_sick, used_sick, 'var(--orange)')] %}
+        <div style="margin-bottom:1.2rem">
+          <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:.3rem">
+            <span style="font-weight:600">{{ lbl }}</span>
+            <span style="color:{{ color }};font-weight:700">{{ bal }} days left</span>
+          </div>
+          <div class="prog-wrap"><div class="prog-fill" style="width:{{ [(bal / (12 if 'Casual' in lbl else 7) * 100)|int, 100]|min }}%;background:{{ color }}"></div></div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:.25rem">{{ used }} used of {{ 12 if 'Casual' in lbl else 7 }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Apply leave -->
+    <div class="e-card">
+      <div class="e-card-head"><h5>Apply for Leave</h5></div>
+      <div class="e-card-body">
+        <form method="POST" action="{{ url_for('employee.apply_leave') }}">
+          <div style="margin-bottom:.8rem">
+            <label style="font-size:.73rem;font-weight:600;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.3rem">Leave Type</label>
+            <select name="leave_type" style="width:100%;background:#F8FAFF;border:1px solid var(--border);border-radius:9px;padding:.6rem .9rem;font-size:.875rem;outline:none">
+              <option value="casual">Casual Leave</option>
+              <option value="sick">Sick Leave</option>
+              <option value="earned">Earned Leave</option>
+            </select>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label style="font-size:.73rem;font-weight:600;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.3rem">From</label>
+              <input type="date" name="start_date" min="{{ today }}" required
+                     style="width:100%;background:#F8FAFF;border:1px solid var(--border);border-radius:9px;padding:.6rem .9rem;font-size:.875rem;outline:none">
+            </div>
+            <div class="col-6">
+              <label style="font-size:.73rem;font-weight:600;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.3rem">To</label>
+              <input type="date" name="end_date" min="{{ today }}" required
+                     style="width:100%;background:#F8FAFF;border:1px solid var(--border);border-radius:9px;padding:.6rem .9rem;font-size:.875rem;outline:none">
+            </div>
+          </div>
+          <div style="margin-bottom:1rem">
+            <label style="font-size:.73rem;font-weight:600;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.3rem">Reason</label>
+            <textarea name="reason" rows="3" placeholder="Brief reason for leave…"
+                      style="width:100%;background:#F8FAFF;border:1px solid var(--border);border-radius:9px;padding:.6rem .9rem;font-size:.875rem;outline:none;resize:vertical"></textarea>
+          </div>
+          <button type="submit" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:.7rem;font-weight:700;cursor:pointer;font-size:.9rem">Submit Request</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="e-card">
+      <div class="e-card-head"><h5><i class="bi bi-calendar-x me-2" style="color:var(--accent)"></i>My Leave Requests</h5></div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr>{% for h in ['Type','From','To','Days','Reason','Status','Note'] %}<th style="font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:.65rem 1rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap">{{ h }}</th>{% endfor %}</tr>
+          </thead>
+          <tbody>
+            {% for r in requests %}
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.75rem 1rem"><span class="e-badge eb-blue">{{ r.leave_type|title }}</span></td>
+              <td style="padding:.75rem 1rem;font-size:.84rem">{{ r.start_date.strftime('%d %b') }}</td>
+              <td style="padding:.75rem 1rem;font-size:.84rem">{{ r.end_date.strftime('%d %b %Y') }}</td>
+              <td style="padding:.75rem 1rem;font-weight:700;text-align:center">{{ r.days }}</td>
+              <td style="padding:.75rem 1rem;font-size:.82rem;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.reason or '—' }}</td>
+              <td style="padding:.75rem 1rem"><span class="e-badge {% if r.status=='approved' %}eb-green{% elif r.status=='rejected' %}eb-red{% else %}eb-yellow{% endif %}">{{ r.status|title }}</span></td>
+              <td style="padding:.75rem 1rem;font-size:.78rem;color:var(--muted)">{{ r.admin_note or '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--muted)">No leave requests yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

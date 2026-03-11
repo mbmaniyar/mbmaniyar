@@ -1,0 +1,50 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Notice Board{% endblock %}
+{% block page_title %}Notice Board{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="panel">
+      <div class="panel-head"><h5>Post New Notice</h5></div>
+      <div class="panel-body">
+        <form method="POST" action="{{ url_for('admin.add_notice') }}">
+          <label class="ctrl-label">Title *</label>
+          <input type="text" name="title" class="ctrl mb-3" required placeholder="Notice title…">
+          <label class="ctrl-label">Priority</label>
+          <select name="priority" class="ctrl mb-3">
+            <option value="normal">📌 Normal</option>
+            <option value="important">⚠️ Important</option>
+            <option value="urgent">🚨 Urgent</option>
+          </select>
+          <label class="ctrl-label">Message *</label>
+          <textarea name="body" class="ctrl mb-3" rows="5" required placeholder="Write your notice…"></textarea>
+          <button type="submit" class="btn-accent w-100"><i class="bi bi-megaphone me-2"></i>Post Notice</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="panel">
+      <div class="panel-head"><h5>All Notices ({{ notices|length }})</h5></div>
+      <div class="panel-body" style="padding:.5rem">
+        {% for n in notices %}
+        <div style="background:var(--surface2);border-radius:12px;padding:1rem;margin-bottom:.6rem;border-left:3px solid {% if n.priority=='urgent' %}var(--accent2){% elif n.priority=='important' %}var(--gold){% else %}var(--blue){% endif %}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem">
+            <div style="flex:1">
+              <div style="font-size:.9rem;font-weight:700;margin-bottom:.3rem">{{ n.title }}</div>
+              <div style="font-size:.82rem;color:var(--muted)">{{ n.body[:150] }}{% if n.body|length > 150 %}…{% endif %}</div>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:.4rem">{{ n.created_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+            </div>
+            <form method="POST" action="{{ url_for('admin.delete_notice', nid=n.id) }}" onsubmit="return confirm('Delete this notice?')">
+              <button type="submit" class="btn-danger"><i class="bi bi-trash3"></i></button>
+            </form>
+          </div>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:3rem;color:var(--muted)">No notices posted yet</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

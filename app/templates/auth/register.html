@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}Create Account{% endblock %}
+
+{% block extra_css %}
+<style>
+  .auth-wrapper {
+    min-height: calc(100vh - 200px);
+    display: flex; align-items: center; padding: 3rem 0;
+  }
+  .form-control-mbm {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    transition: border-color 0.2s;
+  }
+  .form-control-mbm:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139,26,26,0.1);
+  }
+  .req { color: var(--primary); }
+  .step-badge {
+    background: var(--primary);
+    color: #fff;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 600;
+    margin-right: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-7 col-xl-6">
+
+        <div class="card card-mbm p-4 p-md-5">
+
+          <!-- Header -->
+          <div class="text-center mb-4">
+            <h3 class="page-heading mb-1">Create Your Account</h3>
+            <p class="text-muted" style="font-size:0.9rem">
+              Join M B MANIYAR — shop online, pick up in Mantha
+            </p>
+          </div>
+
+          <!-- Registration Form -->
+          <form method="POST" action="{{ url_for('auth.register') }}">
+
+            <input type="hidden" name="csrf_token"
+                   value="{{ csrf_token() if csrf_token is defined else '' }}">
+
+            <!-- Full Name -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.9rem">
+                Full Name <span class="req">*</span>
+              </label>
+              <input type="text" name="full_name"
+                     class="form-control form-control-mbm"
+                     placeholder="e.g. Rahul Sharma" required />
+            </div>
+
+            <!-- Username -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.9rem">
+                Username <span class="req">*</span>
+              </label>
+              <input type="text" name="username"
+                     class="form-control form-control-mbm"
+                     placeholder="Choose a unique username" required />
+              <div class="form-text">This is what you'll use to log in.</div>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.9rem">
+                Email Address <span class="req">*</span>
+              </label>
+              <input type="email" name="email"
+                     class="form-control form-control-mbm"
+                     placeholder="your@email.com" required />
+            </div>
+
+            <!-- Phone -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.9rem">
+                Phone Number
+              </label>
+              <input type="tel" name="phone"
+                     class="form-control form-control-mbm"
+                     placeholder="10-digit mobile number" />
+              <div class="form-text">
+                Used to notify you when your order is ready for pickup.
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.9rem">
+                Password <span class="req">*</span>
+              </label>
+              <input type="password" name="password"
+                     class="form-control form-control-mbm"
+                     placeholder="Minimum 6 characters" required
+                     minlength="6" />
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold" style="font-size:0.9rem">
+                Confirm Password <span class="req">*</span>
+              </label>
+              <input type="password" name="confirm_password"
+                     class="form-control form-control-mbm"
+                     placeholder="Type your password again" required />
+            </div>
+
+            <!-- Submit -->
+            <button type="submit"
+                    class="btn btn-maroon w-100 py-2 rounded-pill
+                           fw-semibold fs-6">
+              <i class="bi bi-person-check me-2"></i>Create My Account
+            </button>
+
+          </form>
+
+          <hr class="my-4">
+
+          <p class="text-center mb-0 text-muted" style="font-size:0.9rem">
+            Already have an account?
+            <a href="{{ url_for('auth.login') }}"
+               class="fw-semibold text-decoration-none"
+               style="color:var(--primary)">Sign in here</a>
+          </p>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client-side password match check -->
+<script>
+  const pass = document.querySelector('[name="password"]');
+  const conf = document.querySelector('[name="confirm_password"]');
+  conf.addEventListener('input', () => {
+    if (conf.value && conf.value !== pass.value) {
+      conf.setCustomValidity('Passwords do not match');
+      conf.style.borderColor = '#dc3545';
+    } else {
+      conf.setCustomValidity('');
+      conf.style.borderColor = '';
+    }
+  });
+</script>
+{% endblock %}

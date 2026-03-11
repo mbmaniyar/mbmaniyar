@@ -1,0 +1,66 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Customers{% endblock %}
+{% block page_title %}Customer Directory{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <div class="panel-head">
+    <h5><i class="bi bi-people me-2"></i>{{ customers|length }} Registered Customers</h5>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#ID</th>
+          <th>Name</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Registered</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in customers %}
+        <tr>
+          <td>
+            <span style="font-family:var(--ff-mono);color:var(--accent)">#{{ c.id }}</span>
+          </td>
+          <td style="font-weight:600">{{ c.full_name }}</td>
+          <td>
+            <code style="background:var(--surface2);padding:.2rem .5rem;border-radius:4px;font-size:.8rem;color:var(--blue)">
+              {{ c.username }}
+            </code>
+          </td>
+          <td style="font-size:.85rem">{{ c.email }}</td>
+          <td style="font-size:.85rem">{{ c.phone or '—' }}</td>
+          <td style="font-size:.8rem;color:var(--muted)">
+            {{ c.created_at.strftime('%d %b %Y') }}
+          </td>
+          <td>
+            <span class="badge-status {% if c.is_active_account %}badge-online{% else %}badge-offline{% endif %}">
+              {{ 'Active' if c.is_active_account else 'Inactive' }}
+            </span>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align:center;padding:3rem;color:var(--muted)">
+            No customers yet
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel mt-3" style="padding:1rem 1.4rem">
+  <i class="bi bi-shield-lock me-2" style="color:var(--accent)"></i>
+  <span style="font-size:.82rem;color:var(--muted)">
+    Passwords are encrypted and cannot be read by anyone — this is a security feature.
+    You can only reset them if needed.
+  </span>
+</div>
+
+{% endblock %}

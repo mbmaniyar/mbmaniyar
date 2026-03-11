@@ -1,0 +1,71 @@
+{% extends 'employee/base_employee.html' %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="e-card" style="text-align:center;padding:2rem">
+      <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#E8903A);display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:800;color:#fff;margin:0 auto 1rem">{{ current_user.full_name[0] }}</div>
+      <h4 style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">{{ current_user.full_name }}</h4>
+      <p style="color:var(--muted);font-size:.875rem">{{ emp.designation or 'Staff' }}</p>
+      <div style="display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+        <span class="e-badge eb-blue">{{ emp.department or 'General' }}</span>
+        <span class="e-badge eb-gray" style="font-family:var(--ff-mono)">{{ emp.employee_code }}</span>
+      </div>
+      <hr style="margin:1.2rem 0;border-color:var(--border)">
+      <div style="text-align:left;font-size:.85rem">
+        <div style="display:flex;gap:.6rem;margin-bottom:.5rem;color:var(--muted)"><i class="bi bi-envelope" style="width:18px"></i>{{ current_user.email }}</div>
+        <div style="display:flex;gap:.6rem;margin-bottom:.5rem;color:var(--muted)"><i class="bi bi-phone" style="width:18px"></i>{{ current_user.phone or 'Not set' }}</div>
+        <div style="display:flex;gap:.6rem;color:var(--muted)"><i class="bi bi-calendar3" style="width:18px"></i>Joined {{ emp.date_of_joining.strftime('%d %b %Y') if emp.date_of_joining else '—' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="e-card mb-4">
+      <div class="e-card-head"><h5>Job Details</h5></div>
+      <div class="e-card-body">
+        <div class="row g-3">
+          {% for label, val in [('Employee Code', emp.employee_code), ('Designation', emp.designation or '—'), ('Department', emp.department or '—'), ('Base Salary', '₹'~"%.0f"|format(emp.base_salary or 0)~'/mo'), ('Commission Rate', "%.1f"|format((emp.commission_rate or 0)*100)~'%'), ('Date of Joining', emp.date_of_joining.strftime('%d %b %Y') if emp.date_of_joining else '—')] %}
+          <div class="col-6">
+            <div style="background:#F8FAFF;border-radius:10px;padding:.7rem .9rem">
+              <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:.25rem">{{ label }}</div>
+              <div style="font-weight:600;font-size:.9rem">{{ val }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="e-card">
+      <div class="e-card-head"><h5>Update Contact & Emergency Info</h5></div>
+      <div class="e-card-body">
+        <form method="POST" action="{{ url_for('employee.update_profile') }}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:.3rem;display:block">Phone</label>
+              <input type="tel" name="phone" value="{{ current_user.phone or '' }}"
+                     style="width:100%;background:#F8FAFF;border:1px solid var(--border);border-radius:9px;padding:.6rem .9rem;font-size:.9rem;outline:none;transition:border-color .2s"
+                     placeholder="Your mobile number">
+            </div>
+            <div class="col-md-6">
+              <label style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:.3rem;display:block">Emergency Contact Name</label>
+              <input type="text" name="emergency_contact" value="{{ emp.emergency_contact or '' }}"
+                     style="width:100%;background:#F8FAFF;border:1px solid var(--border);border-radius:9px;padding:.6rem .9rem;font-size:.9rem;outline:none"
+                     placeholder="Father / Spouse name">
+            </div>
+            <div class="col-md-6">
+              <label style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:.3rem;display:block">Emergency Phone</label>
+              <input type="tel" name="emergency_phone" value="{{ emp.emergency_phone or '' }}"
+                     style="width:100%;background:#F8FAFF;border:1px solid var(--border);border-radius:9px;padding:.6rem .9rem;font-size:.9rem;outline:none"
+                     placeholder="Emergency contact number">
+            </div>
+          </div>
+          <button type="submit" style="margin-top:1rem;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:.65rem 1.5rem;font-weight:600;cursor:pointer;font-size:.9rem">Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

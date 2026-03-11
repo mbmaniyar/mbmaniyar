@@ -1,0 +1,81 @@
+{% extends 'employee/base_employee.html' %}
+{% block title %}My Tasks{% endblock %}
+{% block page_title %}Daily Tasks{% endblock %}
+{% block content %}
+{% set done_ct = tasks|selectattr('is_completed')|list|length %}
+{% set total_ct = tasks|length %}
+<div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
+  {% for lbl, val, col in [('Total', total_ct, 'var(--accent)'), ('Completed', done_ct, 'var(--green)'), ('Pending', total_ct-done_ct, 'var(--orange)')] %}
+  <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:.6rem 1.1rem;display:flex;align-items:center;gap:.5rem;font-size:.83rem;font-weight:600">
+    <span style="width:9px;height:9px;border-radius:50%;background:{{ col }};display:inline-block"></span>{{ lbl }}: {{ val }}
+  </div>
+  {% endfor %}
+</div>
+<div style="max-width:700px">
+  {% set pending = tasks|rejectattr('is_completed')|list %}
+  {% if pending %}
+  <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:.7rem">Pending ({{ pending|length }})</div>
+  {% for task in pending %}
+  <div style="background:#fff;border-radius:13px;border:1px solid var(--border);padding:.9rem 1.1rem;margin-bottom:.6rem;display:flex;align-items:flex-start;gap:.9rem;transition:all .2s" id="tc-{{ task.id }}" onmouseover="this.style.boxShadow='0 4px 14px rgba(0,0,0,.06)'" onmouseout="this.style.boxShadow=''">
+    <div onclick="toggleTask({{ task.id }})" id="chk-{{ task.id }}" style="width:24px;height:24px;border-radius:7px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:.1rem;transition:all .2s"></div>
+    <div style="flex:1">
+      <div style="font-size:.9rem;font-weight:600" id="tt-{{ task.id }}">{{ task.title }}</div>
+      {% if task.description %}<div style="font-size:.8rem;color:var(--muted);margin-top:.2rem">{{ task.description }}</div>{% endif %}
+      {% if task.due_date %}
+      <div style="font-size:.73rem;margin-top:.3rem">
+        <span style="padding:.15rem .55rem;border-radius:50px;font-weight:600;background:{% if task.due_date < today %}#FEF2F2;color:var(--red){% elif task.due_date == today %}#FFFBEB;color:#92400E{% else %}#EFF6FF;color:#1E40AF{% endif %}">
+          {% if task.due_date < today %}⚠ Overdue: {% elif task.due_date == today %}📅 Due Today{% else %}📅 {% endif %}{{ task.due_date.strftime('%d %b') if task.due_date != today else '' }}
+        </span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% set done = tasks|selectattr('is_completed')|list %}
+  {% if done %}
+  <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin:1.5rem 0 .7rem">Done ({{ done|length }})</div>
+  {% for task in done %}
+  <div style="background:#F8FAFF;border-radius:13px;border:1px solid var(--border);padding:.9rem 1.1rem;margin-bottom:.6rem;display:flex;align-items:flex-start;gap:.9rem;opacity:.65" id="tc-{{ task.id }}">
+    <div onclick="toggleTask({{ task.id }})" id="chk-{{ task.id }}" style="width:24px;height:24px;border-radius:7px;background:var(--green);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:.1rem">
+      <i class="bi bi-check-lg" style="color:#fff;font-size:.7rem"></i>
+    </div>
+    <div style="flex:1">
+      <div style="font-size:.9rem;font-weight:600;text-decoration:line-through;color:var(--muted)" id="tt-{{ task.id }}">{{ task.title }}</div>
+      {% if task.completed_at %}<div style="font-size:.73rem;color:var(--muted)">Done {{ task.completed_at.strftime('%d %b, %I:%M %p') }}</div>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if not tasks %}
+  <div style="text-align:center;padding:5rem;color:var(--muted)">
+    <i class="bi bi-check-circle" style="font-size:3.5rem;color:var(--green);display:block;margin-bottom:1rem"></i>
+    <h4 style="font-weight:700">No tasks assigned yet</h4>
+    <p>Your manager will assign tasks here.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+async function toggleTask(id) {
+  const res  = await fetch(`/staff/tasks/toggle/${id}`,{method:'POST'});
+  const data = await res.json();
+  if(!data.ok) return;
+  const chk  = document.getElementById(`chk-${id}`);
+  const title = document.getElementById(`tt-${id}`);
+  const card  = document.getElementById(`tc-${id}`);
+  if(data.done){
+    chk.style.background='var(--green)';chk.style.borderColor='var(--green)';
+    chk.innerHTML='<i class="bi bi-check-lg" style="color:#fff;font-size:.7rem"></i>';
+    title.style.textDecoration='line-through';title.style.color='var(--muted)';
+    card.style.opacity='.65';
+  } else {
+    chk.style.background='';chk.style.borderColor='var(--border)';chk.innerHTML='';
+    title.style.textDecoration='';title.style.color='';card.style.opacity='';
+  }
+}
+</script>
+{% endblock %}

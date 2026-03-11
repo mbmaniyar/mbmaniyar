@@ -1,0 +1,236 @@
+import os
+
+BASE = os.path.expanduser("~/Desktop/mbmaniyar")
+
+content = r"""{% extends 'admin/base_admin.html' %}
+{% block title %}Inventory Matrix{% endblock %}
+{% block page_title %}Inventory Matrix{% endblock %}
+{% block extra_css %}
+<style>
+.matrix-wrap{overflow-x:auto}
+.matrix-table{border-collapse:separate;border-spacing:0;min-width:600px}
+.matrix-table th{
+  background:var(--surface2);padding:.65rem 1rem;font-size:.7rem;
+  font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;
+}
+.matrix-table th.size-col{text-align:center;min-width:72px}
+.matrix-table td{padding:.5rem .4rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.matrix-table tr:hover td{background:rgba(255,255,255,.015)}
+.prod-name-cell{
+  padding:.5rem 1rem;font-size:.875rem;font-weight:500;
+  white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis
+}
+.stock-cell{text-align:center;padding:.3rem}
+.stock-input{
+  width:60px;text-align:center;background:var(--surface2);
+  border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:.3rem .2rem;
+  font-family:var(--ff-mono);font-size:.85rem;font-weight:600;
+  outline:none;transition:border-color .2s;
+}
+.stock-input:focus{border-color:var(--accent)}
+.stock-input.low{border-color:rgba(245,166,35,.5);background:rgba(245,166,35,.06);color:var(--accent)}
+.stock-input.oos{border-color:rgba(232,70,58,.4);background:rgba(232,70,58,.06);color:var(--accent2)}
+.stock-input.good{border-color:rgba(46,204,113,.3);color:var(--green)}
+.no-variant{text-align:center;color:var(--border);font-size:1.1rem}
+.brand-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.brand-tab{
+  padding:.45rem 1.1rem;border-radius:8px;font-size:.83rem;font-weight:600;
+  text-decoration:none;border:1px solid var(--border);color:var(--muted);transition:all .2s;
+}
+.brand-tab:hover,.brand-tab.active{background:var(--accent);color:#1A1A00;border-color:var(--accent)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.save-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:none;animation:blink .8s infinite}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="brand-tabs">
+  {% for b in brands %}
+  <a href="{{ url_for('admin.inventory', brand_id=b.id) }}"
+     class="brand-tab {% if sel_brand and sel_brand.id == b.id %}active{% endif %}">
+    {{ b.name }}
+    {% if b.is_special_tracked %}
+      <span style="font-size:.6rem;opacity:.6">★</span>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+
+{% if sel_brand %}
+<div class="panel">
+  <div class="panel-head">
+    <h5>
+      <i class="bi bi-grid-3x3-gap me-2" style="color:var(--accent)"></i>
+      {{ sel_brand.name }} — Stock Matrix
+      {% if sel_brand.is_special_tracked %}
+        <span style="font-size:.65rem;background:rgba(245,166,35,.15);color:var(--accent);
+                     border-radius:50px;padding:.15rem .6rem;margin-left:.5rem">★ Tracked</span>
+      {% endif %}
+    </h5>
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <div class="save-dot" id="saveDot"></div>
+      <span style="font-size:.78rem;color:var(--muted)" id="saveStatus">
+        Click any cell to edit stock
+      </span>
+    </div>
+  </div>
+
+  <div class="matrix-wrap">
+    {% if products and all_sizes %}
+
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th style="min-width:200px">Item Name</th>
+          {% for size in all_sizes %}
+            <th class="size-col">{{ size }}</th>
+          {% endfor %}
+          <th style="text-align:center">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+
+          {# Build a dictionary: size -> variant for this product #}
+          {% set vmap = {} %}
+          {% for v in p.variants %}
+            {% if vmap.update({v.size: v}) %}{% endif %}
+          {% endfor %}
+
+          {# Calculate row total using a list trick (Jinja2 workaround) #}
+          {% set row_total = [0] %}
+
+          <tr>
+            <td class="prod-name-cell" title="{{ p.name }}">{{ p.name }}</td>
+
+            {% for size in all_sizes %}
+              {% if size in vmap %}
+                {% set v = vmap[size] %}
+
+                {# Add to row total — Jinja2 namespace trick #}
+                {% if row_total.append(row_total.pop() + v.stock_quantity) %}{% endif %}
+
+                <td class="stock-cell">
+                  <input
+                    type="number"
+                    min="0"
+                    class="stock-input {% if v.stock_quantity == 0 %}oos{% elif v.stock_quantity <= v.low_stock_threshold %}low{% else %}good{% endif %}"
+                    value="{{ v.stock_quantity }}"
+                    data-variant-id="{{ v.id }}"
+                    onchange="updateStock(this)"
+                  >
+                </td>
+
+              {% else %}
+                <td class="no-variant">—</td>
+              {% endif %}
+            {% endfor %}
+
+            {# Display row total #}
+            {% set total_val = row_total[0] %}
+            <td style="
+              text-align:center;
+              font-weight:700;
+              font-family:var(--ff-mono);
+              color:{% if total_val == 0 %}var(--accent2){% elif total_val < 10 %}var(--accent){% else %}var(--green){% endif %}
+            ">
+              {{ total_val }}
+            </td>
+          </tr>
+
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% elif products %}
+    <div style="padding:3rem;text-align:center;color:var(--muted)">
+      No size variants added yet.
+      <a href="{{ url_for('admin.products') }}" style="color:var(--accent)">
+        Edit products to add sizes →
+      </a>
+    </div>
+    {% else %}
+    <div style="padding:3rem;text-align:center;color:var(--muted)">
+      No products found for {{ sel_brand.name }}.
+      <a href="{{ url_for('admin.add_product') }}" style="color:var(--accent)">
+        Add a product →
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Legend -->
+  <div style="padding:.8rem 1.4rem;border-top:1px solid var(--border);
+              display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
+    <span style="font-size:.75rem;color:var(--green)">● Good stock</span>
+    <span style="font-size:.75rem;color:var(--accent)">● Low stock (≤ threshold)</span>
+    <span style="font-size:.75rem;color:var(--accent2)">● Out of stock (0)</span>
+    <span style="font-size:.75rem;color:var(--muted)">— Size not set for this item</span>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function updateStock(input) {
+  const dot    = document.getElementById('saveDot');
+  const status = document.getElementById('saveStatus');
+  dot.style.display = 'block';
+  status.textContent = 'Saving…';
+
+  try {
+    const res = await fetch('/admin/inventory/update', {
+      method : 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body   : JSON.stringify({
+        variant_id: parseInt(input.dataset.variantId),
+        qty       : parseInt(input.value) || 0
+      })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      // Update input colour class
+      input.className = 'stock-input ' +
+        (data.oos ? 'oos' : data.low ? 'low' : 'good');
+
+      // Recalculate row total
+      const row = input.closest('tr');
+      let total = 0;
+      row.querySelectorAll('.stock-input').forEach(i => {
+        total += parseInt(i.value) || 0;
+      });
+      const totalCell = row.querySelector('td:last-child');
+      if (totalCell) {
+        totalCell.textContent = total;
+        totalCell.style.color =
+          total === 0 ? 'var(--accent2)' :
+          total < 10  ? 'var(--accent)'  : 'var(--green)';
+      }
+
+      status.textContent = '✓ Saved!';
+      setTimeout(() => {
+        dot.style.display  = 'none';
+        status.textContent = 'Click any cell to edit stock';
+      }, 1500);
+    }
+  } catch(e) {
+    status.textContent = '✗ Error saving';
+    dot.style.background = 'var(--accent2)';
+  }
+}
+</script>
+{% endblock %}
+"""
+
+path = os.path.join(BASE, "app/templates/admin/inventory.html")
+with open(path, "w") as f:
+    f.write(content)
+
+print("✅ inventory.html written successfully!")
+print("   Now run: python3 run.py")

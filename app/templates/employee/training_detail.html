@@ -1,0 +1,46 @@
+{% extends 'employee/base_employee.html' %}
+{% block title %}{{ resource.title }}{% endblock %}
+{% block page_title %}Training Hub{% endblock %}
+{% block content %}
+<div style="max-width:760px">
+  <a href="{{ url_for('employee.training') }}" style="color:var(--accent);text-decoration:none;font-size:.875rem;display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1.2rem">
+    <i class="bi bi-arrow-left"></i> Back to Training Hub
+  </a>
+  <div class="e-card">
+    <div style="padding:1.5rem 1.8rem;border-bottom:1px solid var(--border)">
+      <div style="font-size:2rem;margin-bottom:.6rem">
+        {% if resource.resource_type=='video' %}🎬{% elif resource.resource_type=='policy' %}📋{% else %}📖{% endif %}
+      </div>
+      <span class="e-badge eb-blue" style="margin-bottom:.6rem;display:inline-block">{{ resource.category }}</span>
+      <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:.4rem">{{ resource.title }}</h2>
+      {% if resource.description %}<p style="color:var(--muted);font-size:.9rem">{{ resource.description }}</p>{% endif %}
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.5rem">Added {{ resource.created_at.strftime('%d %b %Y') }}</div>
+    </div>
+    <div style="padding:1.5rem 1.8rem;font-size:.9rem;line-height:1.8;color:var(--text)">
+      {% if resource.content %}
+        {% set content = resource.content %}
+        {% for line in content.split('\n') %}
+          {% if line.startswith('## ') %}
+            <h3 style="font-size:1.1rem;font-weight:700;margin:1.2rem 0 .4rem;color:var(--text)">{{ line[3:] }}</h3>
+          {% elif line.startswith('### ') %}
+            <h4 style="font-size:.95rem;font-weight:700;margin:1rem 0 .3rem;color:var(--accent)">{{ line[4:] }}</h4>
+          {% elif line.startswith('- ') %}
+            <div style="display:flex;gap:.5rem;margin-bottom:.3rem">
+              <span style="color:var(--accent);flex-shrink:0">•</span>
+              <span>{{ line[2:] }}</span>
+            </div>
+          {% elif line.startswith('**') and line.endswith('**') %}
+            <strong>{{ line[2:-2] }}</strong>
+          {% elif line.strip() == '' %}
+            <div style="height:.5rem"></div>
+          {% else %}
+            <p style="margin-bottom:.3rem">{{ line }}</p>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <p style="color:var(--muted)">No content added yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

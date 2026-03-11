@@ -1,0 +1,178 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block extra_css %}
+<style>
+.greeting{font-family:var(--ff-head);font-size:1.6rem;font-weight:800;margin-bottom:.25rem}
+.greeting span{color:var(--accent)}
+@keyframes countUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.stat-card{animation:countUp .4s ease both}
+.stat-card:nth-child(1){animation-delay:.05s}
+.stat-card:nth-child(2){animation-delay:.1s}
+.stat-card:nth-child(3){animation-delay:.15s}
+.stat-card:nth-child(4){animation-delay:.2s}
+.stat-card:nth-child(5){animation-delay:.25s}
+.stat-card:nth-child(6){animation-delay:.3s}
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="greeting mb-4">
+  Good {% if now().hour < 12 %}Morning{% elif now().hour < 17 %}Afternoon{% else %}Evening{% endif %},
+  <span>{{ current_user.full_name.split()[0] }} 👋</span>
+</div>
+
+<!-- Stats Row 1 -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card orange">
+      <div class="stat-label">Total Products</div>
+      <div class="stat-value" style="color:var(--accent)">{{ stats.total_products }}</div>
+      <i class="bi bi-boxes stat-icon" style="color:var(--accent)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card blue">
+      <div class="stat-label">Total Orders</div>
+      <div class="stat-value" style="color:var(--blue)">{{ stats.total_orders }}</div>
+      <i class="bi bi-receipt stat-icon" style="color:var(--blue)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card green">
+      <div class="stat-label">Customers</div>
+      <div class="stat-value" style="color:var(--green)">{{ stats.total_customers }}</div>
+      <i class="bi bi-people stat-icon" style="color:var(--green)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card red">
+      <div class="stat-label">Pending Pickup</div>
+      <div class="stat-value" style="color:var(--accent2)">{{ stats.pending_orders }}</div>
+      <i class="bi bi-clock stat-icon" style="color:var(--accent2)"></i>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Employees</div>
+      <div class="stat-value">{{ stats.total_employees }}</div>
+      <i class="bi bi-person-badge stat-icon"></i>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Low Stock Items</div>
+      <div class="stat-value" style="color:var(--accent)">{{ stats.low_stock }}</div>
+      <i class="bi bi-exclamation-triangle stat-icon" style="color:var(--accent)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Out of Stock</div>
+      <div class="stat-value" style="color:var(--accent2)">{{ stats.out_of_stock }}</div>
+      <i class="bi bi-x-circle stat-icon" style="color:var(--accent2)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card green">
+      <div class="stat-label">Revenue Collected</div>
+      <div class="stat-value" style="color:var(--green);font-size:1.4rem">₹{{ "%.0f"|format(stats.total_revenue) }}</div>
+      <i class="bi bi-currency-rupee stat-icon" style="color:var(--green)"></i>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Recent Orders -->
+  <div class="col-lg-8">
+    <div class="panel">
+      <div class="panel-head">
+        <h5><i class="bi bi-receipt me-2" style="color:var(--blue)"></i>Recent Orders</h5>
+        <a href="{{ url_for('admin.orders') }}" class="btn-ghost" style="font-size:.78rem;padding:.3rem .8rem">View All</a>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order #</th><th>Customer</th><th>Amount</th>
+              <th>Status</th><th>Payment</th><th>Date</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in recent_orders %}
+            <tr>
+              <td><span style="font-family:var(--ff-mono);font-size:.8rem;color:var(--accent)">{{ o.order_number }}</span></td>
+              <td>{{ o.customer.full_name }}</td>
+              <td style="font-weight:600">₹{{ "%.0f"|format(o.total_amount) }}</td>
+              <td><span class="badge-status badge-{{ o.status }}">{{ o.status|title }}</span></td>
+              <td><span class="badge-status badge-{{ o.payment_status }}">{{ o.payment_status|title }}</span></td>
+              <td style="color:var(--muted);font-size:.8rem">{{ o.created_at.strftime('%d %b %Y') }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('admin.update_order', oid=o.id) }}" style="display:inline">
+                  <select name="status" class="ctrl" style="padding:.3rem .6rem;font-size:.78rem;width:130px"
+                          onchange="this.form.submit()">
+                    <option value="">Change status…</option>
+                    {% for s in ['confirmed','ready_for_pickup','completed','cancelled'] %}
+                    <option value="{{ s }}" {% if o.status==s %}selected{% endif %}>{{ s|replace('_',' ')|title }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No orders yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Alert -->
+  <div class="col-lg-4">
+    <div class="panel">
+      <div class="panel-head">
+        <h5><i class="bi bi-exclamation-triangle me-2" style="color:var(--accent)"></i>Low Stock Alert</h5>
+        <a href="{{ url_for('admin.inventory') }}" class="btn-ghost" style="font-size:.78rem;padding:.3rem .8rem">Fix</a>
+      </div>
+      <div class="panel-body" style="padding:.8rem">
+        {% for v in low_stock_items %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .6rem;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:.83rem;font-weight:500">{{ v.product.name[:28] }}{% if v.product.name|length > 28 %}…{% endif %}</div>
+            <div style="font-size:.72rem;color:var(--muted)">Size: {{ v.size }}</div>
+          </div>
+          <span class="badge-status {% if v.stock_quantity==0 %}badge-oos{% else %}badge-low{% endif %}">
+            {{ v.stock_quantity }} left
+          </span>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:2rem;color:var(--muted)">
+          <i class="bi bi-check-circle" style="font-size:1.8rem;color:var(--green);display:block;margin-bottom:.5rem"></i>
+          All stock levels OK!
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="panel mt-3">
+      <div class="panel-head"><h5>⚡ Quick Actions</h5></div>
+      <div class="panel-body" style="display:flex;flex-direction:column;gap:.6rem;padding:1rem">
+        <a href="{{ url_for('admin.add_product') }}" class="btn-accent"><i class="bi bi-plus-circle"></i> Add New Product</a>
+        <a href="{{ url_for('admin.add_employee') }}" class="btn-ghost"><i class="bi bi-person-plus"></i> Add Employee</a>
+        <a href="{{ url_for('admin.inventory') }}" class="btn-ghost"><i class="bi bi-grid-3x3-gap"></i> Update Stock</a>
+        <a href="{{ url_for('admin.orders', status='confirmed') }}" class="btn-ghost"><i class="bi bi-clock"></i> Pending Pickups</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+// Helper for template
+</script>
+{% endblock %}

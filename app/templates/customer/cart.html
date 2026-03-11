@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}Your Cart{% endblock %}
+
+{% block extra_css %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{--ff-disp:'Cormorant Garamond',Georgia,serif;--ff-body:'DM Sans',sans-serif;
+  --navy:#0F1F3D;--gold:#C9922A;--sand:#F5EDD9;--fog:#EDE8DF;--rust:#B5451B;--jade:#1B6B4A;}
+body{font-family:var(--ff-body)}
+
+.cart-page{padding:2.5rem 0 5rem}
+.cart-title{font-family:var(--ff-disp);font-size:2.5rem;color:var(--navy);margin-bottom:.3rem}
+.cart-sub{color:#999;font-size:.9rem;margin-bottom:2rem}
+
+/* Cart item row */
+.cart-item{
+  background:#fff;border-radius:16px;padding:1.2rem;
+  display:flex;gap:1rem;align-items:center;
+  margin-bottom:1rem;border:1px solid rgba(0,0,0,.06);
+  transition:box-shadow .2s;
+}
+.cart-item:hover{box-shadow:0 6px 24px rgba(0,0,0,.07)}
+.cart-item-img{
+  width:80px;height:100px;border-radius:10px;
+  background:var(--fog);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden;
+}
+.cart-item-img img{width:100%;height:100%;object-fit:cover}
+.cart-item-info{flex:1;min-width:0}
+.ci-brand{font-size:.7rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)}
+.ci-name{font-family:var(--ff-disp);font-size:1.05rem;font-weight:600;color:var(--navy);line-height:1.3}
+.ci-size{display:inline-block;background:var(--fog);border-radius:4px;padding:.1rem .5rem;font-size:.75rem;color:#555;margin-top:.3rem}
+.ci-price{font-size:1.1rem;font-weight:700;color:var(--navy);white-space:nowrap}
+.ci-remove{
+  background:none;border:none;color:#ccc;font-size:1.1rem;cursor:pointer;
+  padding:.3rem;border-radius:6px;transition:color .2s,background .2s;
+}
+.ci-remove:hover{color:var(--rust);background:#fff0ee}
+
+/* Order summary card */
+.summary-card{
+  background:#fff;border-radius:20px;padding:1.8rem;
+  border:1px solid rgba(0,0,0,.07);position:sticky;top:90px;
+}
+.summary-title{font-family:var(--ff-disp);font-size:1.5rem;color:var(--navy);margin-bottom:1.2rem}
+.summary-row{display:flex;justify-content:space-between;font-size:.9rem;color:#666;margin-bottom:.6rem}
+.summary-total{display:flex;justify-content:space-between;font-weight:700;font-size:1.15rem;color:var(--navy);border-top:2px solid var(--fog);padding-top:.8rem;margin-top:.8rem}
+
+/* Payment options */
+.pay-label{font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#666;margin:.8rem 0 .4rem}
+.pay-opts{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+.pay-opt{
+  display:flex;align-items:center;gap:.4rem;cursor:pointer;
+  border:2px solid var(--fog);border-radius:8px;padding:.5rem .9rem;
+  font-size:.85rem;font-weight:500;transition:all .2s;
+}
+.pay-opt input{accent-color:var(--navy)}
+.pay-opt:has(input:checked){border-color:var(--navy);background:#f0f4ff}
+
+/* Checkout btn */
+.btn-checkout{
+  width:100%;padding:1rem;border:none;border-radius:14px;
+  background:linear-gradient(135deg,var(--navy),#1a3560);
+  color:#fff;font-family:var(--ff-body);font-size:1rem;font-weight:600;
+  cursor:pointer;transition:all .25s;
+  box-shadow:0 6px 20px rgba(15,31,61,.2);margin-top:.5rem;
+}
+.btn-checkout:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(15,31,61,.3)}
+
+/* Pickup badge */
+.pickup-badge{
+  background:linear-gradient(135deg,#E8F5E9,#F1F8E9);
+  border:1px solid #A5D6A7;border-radius:12px;padding:1rem 1.2rem;
+  display:flex;align-items:flex-start;gap:.75rem;margin-bottom:1rem;
+}
+.pickup-badge i{color:var(--jade);font-size:1.3rem;margin-top:.1rem}
+.pickup-badge strong{font-size:.88rem;color:var(--jade);display:block}
+.pickup-badge small{font-size:.8rem;color:#666}
+
+/* Empty cart */
+.empty-cart{text-align:center;padding:5rem 1rem}
+.empty-cart .ec-icon{font-size:5rem;margin-bottom:1rem}
+.empty-cart h3{font-family:var(--ff-disp);font-size:2rem;color:var(--navy);margin-bottom:.5rem}
+.empty-cart p{color:#999;margin-bottom:2rem}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container cart-page">
+
+  <div class="row">
+    <div class="col-12">
+      <h1 class="cart-title">Your Cart</h1>
+      <p class="cart-sub">
+        {% if cart_items %}{{ cart_items|length }} item{% if cart_items|length != 1 %}s{% endif %} ready for pickup
+        {% else %}Your cart is empty{% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% if cart_items %}
+  <div class="row g-4">
+
+    <!-- Left: Cart Items -->
+    <div class="col-lg-7">
+
+      {% for item in cart_items %}
+      <div class="cart-item">
+        <!-- Product image -->
+        <div class="cart-item-img">
+          {% if item.product.image_filename %}
+            <img src="{{ url_for('static', filename='images/products/' + item.product.image_filename) }}"
+                 alt="{{ item.product.name }}">
+          {% else %}
+            {% if 'shirt' in item.product.name.lower() %}👔
+            {% elif 'trouser' in item.product.name.lower() %}👖
+            {% elif 'kurta' in item.product.name.lower() %}🧣
+            {% else %}🛍️{% endif %}
+          {% endif %}
+        </div>
+
+        <!-- Info -->
+        <div class="cart-item-info">
+          <div class="ci-brand">{{ item.product.brand.name }}</div>
+          <div class="ci-name">{{ item.product.name }}</div>
+          <span class="ci-size">Size: {{ item.variant.size }}</span>
+          <div style="font-size:.82rem;color:#999;margin-top:.3rem">
+            ₹{{ "%.0f"|format(item.product.price) }} × {{ item.quantity }}
+          </div>
+        </div>
+
+        <!-- Line price -->
+        <div class="text-end">
+          <div class="ci-price">₹{{ "%.0f"|format(item.line) }}</div>
+          <a href="{{ url_for('customer.remove_from_cart', item_id=item.id) }}"
+             class="ci-remove mt-2 d-inline-block"
+             onclick="return confirm('Remove this item?')">
+            <i class="bi bi-trash3"></i>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Continue shopping link -->
+      <a href="{{ url_for('customer.index') }}"
+         style="color:var(--gold);font-size:.88rem;font-weight:500;text-decoration:none">
+        <i class="bi bi-arrow-left me-1"></i>Continue Shopping
+      </a>
+
+    </div>
+
+    <!-- Right: Order Summary -->
+    <div class="col-lg-5">
+      <div class="summary-card">
+
+        <div class="summary-title">Order Summary</div>
+
+        <div class="summary-row">
+          <span>Subtotal ({{ cart_items|length }} items)</span>
+          <span>₹{{ "%.0f"|format(subtotal) }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Pickup Charge</span>
+          <span style="color:var(--jade);font-weight:600">FREE</span>
+        </div>
+        <div class="summary-total">
+          <span>Total</span>
+          <span>₹{{ "%.0f"|format(subtotal) }}</span>
+        </div>
+
+        <!-- Pickup info -->
+        <div class="pickup-badge mt-3">
+          <i class="bi bi-shop"></i>
+          <div>
+            <strong>Free In-Store Pickup</strong>
+            <small>We'll have your order ready at <b>M B MANIYAR, Main Road, Mantha</b>.<br>You'll be notified when it's ready.</small>
+          </div>
+        </div>
+
+        <!-- Checkout form -->
+        <form method="POST" action="{{ url_for('customer.checkout') }}">
+
+          <div class="pay-label">Payment at Counter</div>
+          <div class="pay-opts">
+            <label class="pay-opt">
+              <input type="radio" name="payment_method" value="cash" checked> 💵 Cash
+            </label>
+            <label class="pay-opt">
+              <input type="radio" name="payment_method" value="upi"> 📱 UPI
+            </label>
+            <label class="pay-opt">
+              <input type="radio" name="payment_method" value="card"> 💳 Card
+            </label>
+          </div>
+
+          <div class="mb-2" style="font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#666">
+            Notes (optional)
+          </div>
+          <textarea name="notes" rows="2"
+            style="width:100%;border:2px solid var(--fog);border-radius:10px;padding:.6rem .9rem;font-family:var(--ff-body);font-size:.88rem;resize:none;outline:none"
+            placeholder="e.g. Please keep ready by 6 PM…"></textarea>
+
+          <button type="submit" class="btn-checkout">
+            <i class="bi bi-bag-check me-2"></i>Place Pickup Order — ₹{{ "%.0f"|format(subtotal) }}
+          </button>
+
+        </form>
+
+        <p class="text-center mt-3" style="font-size:.75rem;color:#bbb">
+          <i class="bi bi-lock me-1"></i>Secure order. Pay when you pick up at the store.
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+
+  {% else %}
+  <!-- Empty cart -->
+  <div class="empty-cart">
+    <div class="ec-icon">🛍️</div>
+    <h3>Your cart is empty</h3>
+    <p>Looks like you haven't added anything yet. Explore our latest collection!</p>
+    <a href="{{ url_for('customer.index') }}"
+       class="btn btn-maroon rounded-pill px-5 py-2 fs-6">
+      Start Shopping
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

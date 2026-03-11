@@ -1,0 +1,218 @@
+{% extends 'employee/base_employee.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+{% block extra_css %}
+<style>
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.e-stat{animation:fadeUp .4s ease both}
+.e-stat:nth-child(1){animation-delay:.05s}.e-stat:nth-child(2){animation-delay:.1s}
+.e-stat:nth-child(3){animation-delay:.15s}.e-stat:nth-child(4){animation-delay:.2s}
+
+.shift-hero{background:linear-gradient(135deg,#1B2B4B,#3B7DFF);border-radius:16px;padding:1.4rem;color:#fff;position:relative;overflow:hidden}
+.shift-hero::after{content:'';position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.05)}
+.target-bar{height:10px;border-radius:50px;background:rgba(255,255,255,.15);overflow:hidden;margin:.7rem 0}
+.target-fill{height:100%;background:linear-gradient(90deg,#10B981,#06D6A0);border-radius:50px;transition:width 1s ease}
+
+.lb-row{display:flex;align-items:center;gap:.8rem;padding:.6rem 0;border-bottom:1px solid var(--border)}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0}
+.rank-1{background:linear-gradient(135deg,#F5A623,#E8903A);color:#fff}
+.rank-2{background:#E2E8F0;color:#64748B}
+.rank-3{background:#FCD9BD;color:#9A3412}
+.rank-n{background:#F1F5F9;color:#94A3B8}
+
+.notice-strip{border-left:3px solid var(--accent);background:#EFF6FF;border-radius:0 8px 8px 0;padding:.7rem 1rem;margin-bottom:.5rem;font-size:.85rem}
+.notice-strip.urgent{border-color:var(--red);background:#FEF2F2}
+.notice-strip.important{border-color:var(--orange);background:#FFF7ED}
+</style>
+{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:1.5rem">
+  <h2 style="font-size:1.45rem;font-weight:800;margin-bottom:.2rem">
+    {% set h=now().hour %}{% if h<12 %}Good Morning{% elif h<17 %}Good Afternoon{% else %}Good Evening{% endif %},
+    {{ current_user.full_name.split()[0] }}! 👋
+  </h2>
+  <p style="color:var(--muted);font-size:.875rem">{{ emp.designation or 'Staff' }} · {{ emp.department or 'M B MANIYAR' }}</p>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="e-stat">
+      <div class="e-stat-lbl">Base Salary</div>
+      <div class="e-stat-val" style="font-size:1.4rem;color:var(--green)">₹{{ "%.0f"|format(emp.base_salary or 0) }}</div>
+      <div class="e-stat-sub">per month</div>
+      <i class="bi bi-wallet2 e-stat-icon" style="color:var(--green)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="e-stat">
+      <div class="e-stat-lbl">Commission Earned</div>
+      <div class="e-stat-val" style="color:var(--purple)">₹{{ "%.0f"|format(salary.commission_earned if salary else 0) }}</div>
+      <div class="e-stat-sub">this month</div>
+      <i class="bi bi-graph-up e-stat-icon" style="color:var(--purple)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="e-stat">
+      <div class="e-stat-lbl">Shifts This Month</div>
+      <div class="e-stat-val" style="color:var(--accent)">{{ completed_shifts }}/{{ total_shifts }}</div>
+      <div class="e-stat-sub">attended</div>
+      <i class="bi bi-calendar-check e-stat-icon" style="color:var(--accent)"></i>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="e-stat">
+      <div class="e-stat-lbl">Pending Tasks</div>
+      <div class="e-stat-val" style="color:var(--orange)">{{ pending_tasks|length }}</div>
+      <div class="e-stat-sub">to complete today</div>
+      <i class="bi bi-list-check e-stat-icon" style="color:var(--orange)"></i>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+
+    <!-- Today's shift -->
+    {% if todays_shift %}
+    <div class="shift-hero mb-4">
+      <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:2px;opacity:.6;margin-bottom:.4rem">Today's Shift</div>
+      <div style="font-size:2rem;font-weight:800;font-family:var(--ff-mono)">
+        {{ todays_shift.start_time.strftime('%I:%M %p') }} – {{ todays_shift.end_time.strftime('%I:%M %p') }}
+      </div>
+      <div style="display:flex;align-items:center;gap:.8rem;margin-top:.5rem">
+        <span style="font-size:.8rem;opacity:.7"><i class="bi bi-building me-1"></i>{{ emp.department or 'Main Floor' }}</span>
+        <span class="e-badge {% if todays_shift.status=='completed' %}eb-green{% else %}eb-blue{% endif %}" style="font-size:.72rem">{{ todays_shift.status|title }}</span>
+      </div>
+      {% if clock_today %}
+      <div style="margin-top:.8rem;font-size:.8rem;background:rgba(255,255,255,.1);border-radius:8px;padding:.5rem .8rem;display:flex;gap:1.5rem">
+        <span>🟢 In: {{ clock_today.clock_in.strftime('%I:%M %p') if clock_today.clock_in else '—' }}</span>
+        <span>🔴 Out: {{ clock_today.clock_out.strftime('%I:%M %p') if clock_today.clock_out else 'Active' }}</span>
+        {% if clock_today.hours_worked %}<span>⏱ {{ clock_today.hours_worked }}h</span>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="e-card mb-4" style="padding:1.5rem;text-align:center;color:var(--muted)">
+      <i class="bi bi-calendar-x" style="font-size:2rem;display:block;margin-bottom:.5rem"></i>
+      No shift scheduled for today
+    </div>
+    {% endif %}
+
+    <!-- Sales target progress -->
+    {% if target_amount > 0 %}
+    <div class="e-card mb-4">
+      <div class="e-card-head"><h5><i class="bi bi-bullseye me-2" style="color:var(--orange)"></i>Monthly Sales Target</h5></div>
+      <div class="e-card-body">
+        {% set pct = [(sales_this_month / target_amount * 100)|int, 100]|min %}
+        <div style="display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted);margin-bottom:.4rem">
+          <span>₹{{ "%.0f"|format(sales_this_month) }} achieved</span>
+          <span>Target: ₹{{ "%.0f"|format(target_amount) }}</span>
+        </div>
+        <div class="prog-wrap"><div class="prog-fill" style="width:{{ pct }}%;background:{% if pct>=100 %}linear-gradient(90deg,var(--green),#06D6A0){% elif pct>=60 %}linear-gradient(90deg,var(--accent),var(--purple)){% else %}linear-gradient(90deg,var(--orange),var(--red)){% endif %}"></div></div>
+        <div style="text-align:center;font-size:.82rem;margin-top:.5rem;color:{% if pct>=100 %}var(--green){% else %}var(--muted){% endif %}">
+          {% if pct >= 100 %}🎉 Target achieved!{% else %}{{ pct }}% — ₹{{ "%.0f"|format(target_amount - sales_this_month) }} to go{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Tasks -->
+    <div class="e-card">
+      <div class="e-card-head">
+        <h5><i class="bi bi-check2-square me-2" style="color:var(--accent)"></i>Today's Tasks</h5>
+        <a href="{{ url_for('employee.tasks') }}" style="font-size:.8rem;color:var(--accent);text-decoration:none">All Tasks →</a>
+      </div>
+      <div class="e-card-body" style="padding:.5rem 1.4rem">
+        {% if pending_tasks %}
+          {% for task in pending_tasks %}
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.65rem 0;border-bottom:1px solid var(--border)" id="dt-{{ task.id }}">
+            <div onclick="toggleTask({{ task.id }}, this)"
+                 style="width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .2s">
+            </div>
+            <div style="flex:1">
+              <div style="font-size:.86rem;font-weight:600" id="dt-title-{{ task.id }}">{{ task.title }}</div>
+              {% if task.due_date %}
+              <div style="font-size:.72rem;color:{% if task.due_date < today %}var(--red){% else %}var(--muted){% endif %}">
+                Due {{ task.due_date.strftime('%d %b') }}{% if task.due_date < today %} ⚠ Overdue{% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div style="text-align:center;padding:1.5rem;color:var(--muted)">
+          <i class="bi bi-check-circle" style="color:var(--green);font-size:1.8rem;display:block;margin-bottom:.4rem"></i>
+          All tasks done! Great work 🎉
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+
+    <!-- Leaderboard -->
+    <div class="e-card mb-4">
+      <div class="e-card-head"><h5>🏆 This Month's Leaderboard</h5></div>
+      <div class="e-card-body" style="padding:.5rem 1.4rem">
+        {% if leaderboard %}
+          {% for emp_row, sal_row in leaderboard %}
+          <div class="lb-row">
+            <div class="lb-rank {% if loop.index==1 %}rank-1{% elif loop.index==2 %}rank-2{% elif loop.index==3 %}rank-3{% else %}rank-n{% endif %}">
+              {% if loop.index<=3 %}{{ ['🥇','🥈','🥉'][loop.index-1] }}{% else %}{{ loop.index }}{% endif %}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.855rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+                {% if emp_row.user_id == current_user.id %};color:var(--accent){% endif %}">
+                {{ emp_row.user.full_name }}{% if emp_row.user_id == current_user.id %} (You){% endif %}
+              </div>
+              <div style="font-size:.72rem;color:var(--muted)">{{ emp_row.designation or 'Staff' }}</div>
+            </div>
+            <div style="font-family:var(--ff-mono);font-size:.85rem;font-weight:700;color:var(--green)">
+              ₹{{ "%.0f"|format(sal_row.commission_earned or 0) }}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div style="text-align:center;padding:2rem;color:var(--muted);font-size:.85rem">No data yet this month</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Notices -->
+    <div class="e-card">
+      <div class="e-card-head">
+        <h5><i class="bi bi-megaphone me-2" style="color:var(--orange)"></i>Notice Board</h5>
+        <a href="{{ url_for('employee.notices') }}" style="font-size:.8rem;color:var(--accent);text-decoration:none">All →</a>
+      </div>
+      <div class="e-card-body" style="padding:.8rem 1rem">
+        {% for n in notices %}
+        <div class="notice-strip {{ n.priority }}">
+          {% if n.priority=='urgent' %}🚨{% elif n.priority=='important' %}⚠️{% else %}📌{% endif %}
+          <strong style="font-size:.83rem">{{ n.title }}</strong>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">{{ n.created_at.strftime('%d %b') }}</div>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.85rem">No notices posted yet</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+async function toggleTask(id, el) {
+  const res  = await fetch(`/staff/tasks/toggle/${id}`,{method:'POST'});
+  const data = await res.json();
+  if(data.ok && data.done){
+    el.style.background='var(--green)';el.style.borderColor='var(--green)';el.innerHTML='<i class="bi bi-check-lg" style="color:#fff;font-size:.7rem"></i>';
+    document.getElementById(`dt-title-${id}`).style.textDecoration='line-through';
+    document.getElementById(`dt-title-${id}`).style.color='var(--muted)';
+  }
+}
+</script>
+{% endblock %}
