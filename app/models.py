@@ -14,6 +14,10 @@ class User(UserMixin, db.Model):
     full_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(15))
     is_active_account = db.Column(db.Boolean, default=True)
+    email_verified      = db.Column(db.Boolean, default=False)
+    verification_token  = db.Column(db.String(100))
+    reset_token         = db.Column(db.String(100))
+    reset_token_expiry  = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     orders = db.relationship('Order', backref='customer', lazy=True,
                               foreign_keys='Order.user_id')

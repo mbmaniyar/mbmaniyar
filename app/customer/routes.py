@@ -130,6 +130,12 @@ def add_to_cart():
                 variant_id=variant_id,
                 quantity=quantity))
         db.session.commit()
+        # Send confirmation email
+        try:
+            from app.mail_service import send_order_confirmation
+            send_order_confirmation(current_user, order)
+        except Exception as e:
+            print(f"Email error: {e}")
         flash(f'Added to cart! 🛍️', 'success')
     else:
         flash('Please log in or register to add items to your cart.', 'warning')
@@ -146,6 +152,12 @@ def remove_from_cart(item_id):
     if item.user_id == current_user.id:
         db.session.delete(item)
         db.session.commit()
+        # Send confirmation email
+        try:
+            from app.mail_service import send_order_confirmation
+            send_order_confirmation(current_user, order)
+        except Exception as e:
+            print(f"Email error: {e}")
         flash('Item removed from cart.', 'info')
     return redirect(url_for('customer.cart'))
 

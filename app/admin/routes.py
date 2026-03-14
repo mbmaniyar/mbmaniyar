@@ -342,6 +342,13 @@ def update_order(oid):
     if pm:
         order.payment_status = pm
     db.session.commit()
+    # Email customer about status change
+    try:
+        from app.mail_service import send_order_status_update
+        if order.user and not order.user.email.endswith('@mbmaniyar.local'):
+            send_order_status_update(order.user, order)
+    except Exception as e:
+        print(f"Email error: {e}")
     flash(f'Order {order.order_number} updated!', 'success')
     return redirect(url_for('admin.orders'))
 
@@ -666,3 +673,35 @@ def set_target():
     db.session.commit()
     flash('Target set!','success')
     return redirect(url_for('admin.sales_targets'))
+
+
+# ── ADMIN: RESET ANY USER'S PASSWORD ─────────────────────────────
+@admin_bp.route('/users')
+@admin_required
+def users():
+    all_users = User.query.order_by(User.role, User.created_at.desc()).all()
+    return render_template('admin/users.html', users=all_users)
+
+@admin_bp.route('/users/reset-password/<int:uid>', methods=['POST'])
+@admin_required
+def admin_reset_password(uid):
+    from werkzeug.security import generate_password_hash
+    user   = User.query.get_or_404(uid)
+    new_pw = request.form.get('new_password','').strip()
+    if len(new_pw) < 6:
+        flash('Password must be at least 6 characters.','danger')
+        return redirect(url_for('admin.users'))
+    user.password_hash = generate_password_hash(new_pw)
+    db.session.commit()
+    flash(f'Password for {user.full_name} updated!','success')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/users/toggle/<int:uid>', methods=['POST'])
+@admin_required
+def toggle_user(uid):
+    user = User.query.get_or_404(uid)
+    if user.id == current_user.id:
+        return 'Cannot deactivate yourself', 400
+    user.is_active_account = not user.is_active_account
+    db.session.commit()
+    return {'active': user.is_active_account}

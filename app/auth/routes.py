@@ -1,196 +1,203 @@
-# auth/routes.py — Authentication Routes
-#
-# This file handles everything related to logging in, logging out,
-# and registering new customer accounts.
-#
-# A "route" in Flask = a URL that does something.
-# @auth_bp.route('/login') means: when someone visits /auth/login, run this function.
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import db, User
+from datetime import datetime, timedelta
+import secrets
 
-# Blueprint groups all auth-related routes together under one name 'auth'
 auth_bp = Blueprint('auth', __name__)
 
-
-# =============================================================================
-# HOME ROUTE — The store's landing page
-# =============================================================================
-
+# ── HOME REDIRECT ──────────────────────────────────────────────────
 @auth_bp.route('/')
 def home():
-    """
-    The front door of M B MANIYAR.
-    If someone is already logged in, send them to their correct portal.
-    Otherwise, show the public landing page.
-    """
     if current_user.is_authenticated:
-        return _redirect_by_role(current_user.role)
-    return render_template('index.html')
+        if current_user.role == 'admin':
+            return redirect(url_for('admin.dashboard'))
+        elif current_user.role == 'employee':
+            return redirect(url_for('employee.dashboard'))
+        else:
+            return redirect(url_for('customer.index'))
+    return redirect(url_for('customer.index'))
 
+@auth_bp.route('/about')
+def about():
+    return render_template('customer/about.html')
 
-# =============================================================================
-# LOGIN ROUTE
-# =============================================================================
-
-@auth_bp.route('/login', methods=['GET', 'POST'])
+# ── LOGIN ──────────────────────────────────────────────────────────
+@auth_bp.route('/login', methods=['GET','POST'])
 def login():
-    """
-    GET  → Show the login form
-    POST → Process the login form (check username/password)
-    
-    'methods=['GET', 'POST']' means this route accepts both types of requests.
-    GET  = browser just visiting the page
-    POST = browser submitting a form
-    """
-
-    # If user is already logged in, no need to show login page
     if current_user.is_authenticated:
-        return _redirect_by_role(current_user.role)
-
-    # When the form is submitted (POST request)
+        return redirect(url_for('auth.home'))
     if request.method == 'POST':
-
-        # Get the values typed into the form fields
-        # request.form['name'] reads what the user typed in the input named 'name'
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
-        # 'remember me' checkbox — keeps them logged in after browser closes
-        remember = True if request.form.get('remember') else False
-
-        # --- Validate inputs aren't empty ---
-        if not username or not password:
-            flash('Please enter both username and password.', 'danger')
-            return render_template('auth/login.html')
-
-        # --- Look up the user in the database ---
-        # We check both username AND email so user can log in with either
-        user = User.query.filter(
-            (User.username == username) | (User.email == username)
+        username = request.form.get('username','').strip()
+        password = request.form.get('password','').strip()
+        user     = User.query.filter(
+            (User.username==username) | (User.email==username)
         ).first()
-
-        # --- Check if user exists and password is correct ---
-        # check_password_hash compares the typed password with the stored hash
-        if not user or not check_password_hash(user.password_hash, password):
-            flash('Invalid username or password. Please try again.', 'danger')
-            return render_template('auth/login.html')
-
-        # --- Check if account is active ---
-        if not user.is_active_account:
-            flash('Your account has been deactivated. Please contact the store.', 'warning')
-            return render_template('auth/login.html')
-
-        # --- All checks passed! Log the user in ---
-        # login_user() from Flask-Login creates a session for this user
-        login_user(user, remember=remember)
-
-        flash(f'Welcome back, {user.full_name}! 👋', 'success')
-
-        # Redirect to the correct portal based on their role
-        return _redirect_by_role(user.role)
-
-    # GET request — just show the login form
+        if user and check_password_hash(user.password_hash, password):
+            if not user.is_active_account:
+                flash('Account deactivated. Contact admin.','danger')
+                return render_template('auth/login.html')
+            login_user(user)
+            nxt = request.args.get('next')
+            if nxt:
+                return redirect(nxt)
+            return redirect(url_for('auth.home'))
+        flash('Invalid username or password.','danger')
     return render_template('auth/login.html')
 
-
-# =============================================================================
-# LOGOUT ROUTE
-# =============================================================================
-
-@auth_bp.route('/logout')
-@login_required  # Only logged-in users can log out (makes sense!)
-def logout():
-    """Logs the current user out and sends them to the home page."""
-    logout_user()  # Flask-Login clears the session
-    flash('You have been logged out successfully.', 'info')
-    return redirect(url_for('auth.home'))
-
-
-# =============================================================================
-# REGISTER ROUTE (Customers only — employees/admin are created by admin)
-# =============================================================================
-
-@auth_bp.route('/register', methods=['GET', 'POST'])
+# ── REGISTER ───────────────────────────────────────────────────────
+@auth_bp.route('/register', methods=['GET','POST'])
 def register():
-    """
-    Only customers register themselves.
-    Employee and admin accounts are created by the store owner in the admin panel.
-    """
-
-    # Already logged in? Send them home.
-    if current_user.is_authenticated:
-        return _redirect_by_role(current_user.role)
-
     if request.method == 'POST':
-
-        # Collect all form fields
-        full_name = request.form.get('full_name', '').strip()
-        username  = request.form.get('username', '').strip()
-        email     = request.form.get('email', '').strip().lower()
-        phone     = request.form.get('phone', '').strip()
-        password  = request.form.get('password', '')
-        confirm   = request.form.get('confirm_password', '')
-
-        # --- Basic validation ---
-        if not all([full_name, username, email, password, confirm]):
-            flash('Please fill in all required fields.', 'danger')
-            return render_template('auth/register.html')
-
-        if len(password) < 6:
-            flash('Password must be at least 6 characters long.', 'danger')
-            return render_template('auth/register.html')
-
-        if password != confirm:
-            flash('Passwords do not match. Please try again.', 'danger')
-            return render_template('auth/register.html')
-
-        # --- Check if username or email already exists ---
+        full_name = request.form.get('full_name','').strip()
+        username  = request.form.get('username','').strip()
+        email     = request.form.get('email','').strip()
+        phone     = request.form.get('phone','').strip()
+        password  = request.form.get('password','').strip()
         if User.query.filter_by(username=username).first():
-            flash('That username is already taken. Please choose another.', 'danger')
+            flash('Username taken.','danger')
             return render_template('auth/register.html')
-
-        if User.query.filter_by(email=email).first():
-            flash('An account with that email already exists.', 'danger')
+        if email and User.query.filter_by(email=email).first():
+            flash('Email already registered.','danger')
             return render_template('auth/register.html')
-
-        # --- Create the new customer account ---
-        new_user = User(
-            full_name=full_name,
-            username=username,
-            email=email,
-            phone=phone,
-            # NEVER store plain password — always hash it!
-            password_hash=generate_password_hash(password),
-            role='customer'  # All self-registered users are customers
-        )
-
-        # Save to database
-        db.session.add(new_user)
+        if not email:
+            email = f"{username}@mbmaniyar.local"
+        token = secrets.token_urlsafe(32)
+        user  = User(full_name=full_name, username=username, email=email,
+                     phone=phone, password_hash=generate_password_hash(password),
+                     role='customer', verification_token=token,
+                     email_verified=email.endswith('@mbmaniyar.local'))
+        db.session.add(user)
         db.session.commit()
-
-        # Automatically log them in after registration
-        login_user(new_user)
-        flash(f'Welcome to M B MANIYAR, {full_name}! Your account is ready. 🎉', 'success')
-        return redirect(url_for('customer.index'))
-
-    # GET — show the registration form
+        # Send verification email
+        if not email.endswith('@mbmaniyar.local'):
+            try:
+                from app.mail_service import send_verification_email
+                send_verification_email(user, token)
+                flash('Account created! Check your email to verify your account.','success')
+            except Exception as e:
+                flash('Account created! You can log in now.','success')
+        else:
+            flash('Account created! You can log in now.','success')
+        return redirect(url_for('auth.login'))
     return render_template('auth/register.html')
 
+# ── EMAIL VERIFICATION ─────────────────────────────────────────────
+@auth_bp.route('/verify/<token>')
+def verify_email(token):
+    user = User.query.filter_by(verification_token=token).first()
+    if not user:
+        flash('Invalid or expired verification link.','danger')
+        return redirect(url_for('auth.login'))
+    user.email_verified      = True
+    user.verification_token  = None
+    db.session.commit()
+    try:
+        from app.mail_service import send_welcome_email
+        send_welcome_email(user)
+    except:
+        pass
+    flash('Email verified! Welcome to M.B Maniyar 🎉','success')
+    return redirect(url_for('auth.login'))
 
-# =============================================================================
-# HELPER FUNCTION
-# =============================================================================
+# ── RESEND VERIFICATION ────────────────────────────────────────────
+@auth_bp.route('/resend-verification', methods=['GET','POST'])
+def resend_verification():
+    if request.method == 'POST':
+        email = request.form.get('email','').strip()
+        user  = User.query.filter_by(email=email).first()
+        if user and not user.email_verified:
+            token = secrets.token_urlsafe(32)
+            user.verification_token = token
+            db.session.commit()
+            try:
+                from app.mail_service import send_verification_email
+                send_verification_email(user, token)
+            except:
+                pass
+        flash('If that email exists, a verification link has been sent.','info')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/resend_verification.html')
 
-def _redirect_by_role(role):
-    """
-    Send the user to the correct portal based on their role.
-    This is called after login and on home page if already logged in.
-    """
-    if role == 'admin':
-        return redirect(url_for('admin.dashboard'))
-    elif role == 'employee':
-        return redirect(url_for('employee.dashboard'))
-    else:  # customer
+# ── FORGOT PASSWORD ────────────────────────────────────────────────
+@auth_bp.route('/forgot-password', methods=['GET','POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email','').strip()
+        user  = User.query.filter(
+            (User.email==email) | (User.username==email)
+        ).first()
+        if user:
+            token = secrets.token_urlsafe(32)
+            user.reset_token        = token
+            user.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
+            db.session.commit()
+            try:
+                from app.mail_service import send_password_reset_email
+                send_password_reset_email(user, token)
+            except:
+                pass
+        flash('If that account exists, a reset link has been sent to your email.','info')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/forgot_password.html')
+
+# ── RESET PASSWORD ─────────────────────────────────────────────────
+@auth_bp.route('/reset-password/<token>', methods=['GET','POST'])
+def reset_password(token):
+    user = User.query.filter_by(reset_token=token).first()
+    if not user or (user.reset_token_expiry and user.reset_token_expiry < datetime.utcnow()):
+        flash('Invalid or expired reset link. Please request a new one.','danger')
+        return redirect(url_for('auth.forgot_password'))
+    if request.method == 'POST':
+        pw  = request.form.get('password','').strip()
+        pw2 = request.form.get('confirm_password','').strip()
+        if len(pw) < 6:
+            flash('Password must be at least 6 characters.','danger')
+            return render_template('auth/reset_password.html', token=token)
+        if pw != pw2:
+            flash('Passwords do not match.','danger')
+            return render_template('auth/reset_password.html', token=token)
+        user.password_hash   = generate_password_hash(pw)
+        user.reset_token     = None
+        user.reset_token_expiry = None
+        db.session.commit()
+        flash('Password reset! You can now log in.','success')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password.html', token=token)
+
+# ── CHANGE PASSWORD (logged in users) ─────────────────────────────
+@auth_bp.route('/change-password', methods=['GET','POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        current_pw = request.form.get('current_password','').strip()
+        new_pw     = request.form.get('new_password','').strip()
+        confirm_pw = request.form.get('confirm_password','').strip()
+        if not check_password_hash(current_user.password_hash, current_pw):
+            flash('Current password is incorrect.','danger')
+            return render_template('auth/change_password.html')
+        if len(new_pw) < 6:
+            flash('New password must be at least 6 characters.','danger')
+            return render_template('auth/change_password.html')
+        if new_pw != confirm_pw:
+            flash('New passwords do not match.','danger')
+            return render_template('auth/change_password.html')
+        current_user.password_hash = generate_password_hash(new_pw)
+        db.session.commit()
+        flash('Password changed successfully! 🔐','success')
+        if current_user.role == 'admin':
+            return redirect(url_for('admin.dashboard'))
+        elif current_user.role == 'employee':
+            return redirect(url_for('employee.profile'))
         return redirect(url_for('customer.index'))
+    return render_template('auth/change_password.html')
+
+# ── LOGOUT ─────────────────────────────────────────────────────────
+@auth_bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out successfully.','info')
+    return redirect(url_for('auth.login'))

@@ -1,0 +1,54 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}User Management{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head"><h5><i class="bi bi-people me-2"></i>All Users ({{ users|length }})</h5></div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead>
+        <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Verified</th><th>Status</th><th>Reset Password</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-weight:600">{{ u.full_name }}</td>
+          <td style="font-family:var(--ff-mono);font-size:.82rem">{{ u.username }}</td>
+          <td style="font-size:.82rem;color:var(--muted)">{{ u.email }}</td>
+          <td>
+            <span class="badge-status {% if u.role=='admin' %}badge-completed{% elif u.role=='employee' %}badge-confirmed{% else %}badge-pending{% endif %}">
+              {{ u.role|title }}
+            </span>
+          </td>
+          <td style="text-align:center">
+            {% if u.email_verified %}✅{% else %}⏳{% endif %}
+          </td>
+          <td>
+            {% if u.is_active_account %}
+            <span class="badge-status badge-completed">Active</span>
+            {% else %}
+            <span class="badge-status badge-pending">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.id != current_user.id %}
+            <form method="POST" action="{{ url_for('admin.admin_reset_password', uid=u.id) }}"
+                  style="display:flex;gap:.4rem;align-items:center"
+                  onsubmit="return confirm('Reset password for {{ u.full_name }}?')">
+              <input type="password" name="new_password" class="ctrl"
+                     style="padding:.3rem .6rem;font-size:.78rem;width:130px" placeholder="New password" required minlength="6">
+              <button type="submit" class="btn-success" style="padding:.3rem .7rem;font-size:.8rem">Set</button>
+            </form>
+            {% else %}
+            <a href="/change-password" class="btn-accent" style="font-size:.78rem;padding:.3rem .7rem;text-decoration:none">Change Mine</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No users</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

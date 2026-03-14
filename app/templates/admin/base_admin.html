@@ -242,10 +242,15 @@ select.ctrl option{background:var(--surface)}
        class="nav-item {% if request.endpoint=='admin.training' %}active{% endif %}">
       <i class="bi bi-book"></i> Training Hub
     </a>
+    <a href="{{ url_for('admin.users') }}"
+       class="nav-item {% if request.endpoint=='admin.users' %}active{% endif %}">
+      <i class="bi bi-people"></i> User Management
+    </a>
     <div class="nav-section-label">Store</div>
     <a href="{{ url_for('customer.index') }}" target="_blank" class="nav-item">
       <i class="bi bi-shop"></i> View Live Shop
     </a>
+    <a href="/change-password" style="margin-bottom:.3rem">🔐 Change Password</a>
     <a href="{{ url_for('auth.logout') }}" class="nav-item"
        style="color:var(--accent2)">
       <i class="bi bi-box-arrow-left"></i> Logout
