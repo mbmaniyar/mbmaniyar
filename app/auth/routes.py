@@ -40,6 +40,11 @@ def login():
                 flash('Account deactivated. Contact admin.','danger')
                 return render_template('auth/login.html')
             login_user(user)
+            try:
+                from app.security_emails import send_login_alert
+                send_login_alert(user, request)
+            except Exception as e:
+                print(f'Login alert error: {e}')
             nxt = request.args.get('next')
             if nxt:
                 return redirect(nxt)
@@ -186,6 +191,11 @@ def change_password():
             return render_template('auth/change_password.html')
         current_user.password_hash = generate_password_hash(new_pw)
         db.session.commit()
+        try:
+            from app.security_emails import send_password_changed_alert
+            send_password_changed_alert(current_user, request)
+        except Exception as e:
+            print(f'Password alert error: {e}')
         flash('Password changed successfully! 🔐','success')
         if current_user.role == 'admin':
             return redirect(url_for('admin.dashboard'))

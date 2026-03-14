@@ -1,17 +1,11 @@
 services:
   - type: web
     name: mbmaniyar
-    runtime: python
+    env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT run:app
+    startCommand: gunicorn run:app
     envVars:
-      - key: SECRET_KEY
-        generateValue: true
-      - key: STORE_NAME
-        value: M.B Maniyar Cloth Store
-      - key: STORE_ADDRESS
-        value: Main Road, Opposite Bus Stand, Mantha, Jalna
       - key: FLASK_ENV
         value: production
-      - key: DATABASE_URL
-        value: sqlite:///mbmaniyar.db
+      - key: SECRET_KEY
+        generateValue: true

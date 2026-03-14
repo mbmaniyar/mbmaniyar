@@ -115,7 +115,7 @@
                   <select name="status" class="ctrl" style="padding:.3rem .6rem;font-size:.78rem;width:130px"
                           onchange="this.form.submit()">
                     <option value="">Change status…</option>
-                    {% for s in ['confirmed','ready_for_pickup','completed','cancelled'] %}
+                    {% for s in ['confirmed','dispatched','shipped','out_for_delivery','delivered','ready_for_pickup','completed','cancelled'] %}
                     <option value="{{ s }}" {% if o.status==s %}selected{% endif %}>{{ s|replace('_',' ')|title }}</option>
                     {% endfor %}
                   </select>

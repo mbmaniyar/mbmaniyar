@@ -344,11 +344,15 @@ def update_order(oid):
     db.session.commit()
     # Email customer about status change
     try:
-        from app.mail_service import send_order_status_update
-        if order.user and not order.user.email.endswith('@mbmaniyar.local'):
-            send_order_status_update(order.user, order)
+        from app.email_utils import send_order_status_email
+        email_sent = send_order_status_email(order)
+        if email_sent:
+            flash(f'✅ Status updated & email sent to customer!', 'success')
+        else:
+            flash(f'✅ Status updated. (No email — status not tracked or no customer email)', 'info')
     except Exception as e:
         print(f"Email error: {e}")
+        flash(f'✅ Status updated. (Email failed: {e})', 'warning')
     flash(f'Order {order.order_number} updated!', 'success')
     return redirect(url_for('admin.orders'))
 

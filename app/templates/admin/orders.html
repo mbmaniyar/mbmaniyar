@@ -5,7 +5,7 @@
 
 <!-- Status tabs -->
 <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
-  {% for s in [('all','All Orders'),('confirmed','Pending Pickup'),('ready_for_pickup','Ready'),('completed','Completed'),('cancelled','Cancelled')] %}
+  {% for s in [('all','All Orders'),('confirmed','Confirmed'),('dispatched','Dispatched'),('shipped','Shipped'),('out_for_delivery','Out for Delivery'),('delivered','Delivered'),('ready_for_pickup','Ready for Pickup'),('completed','Completed'),('cancelled','Cancelled')] %}
   <a href="{{ url_for('admin.orders', status=s[0]) }}"
      style="padding:.4rem 1rem;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;transition:all .2s;
             {% if status==s[0] %}background:var(--accent);color:#1A1A00{% else %}background:var(--surface2);color:var(--muted){% endif %}">
@@ -57,7 +57,7 @@
               <input type="hidden" name="payment_status" value="{{ o.payment_status }}">
               <select name="status" class="ctrl" style="padding:.3rem .5rem;font-size:.78rem;width:150px"
                       onchange="this.form.submit()">
-                {% for s in ['confirmed','ready_for_pickup','completed','cancelled'] %}
+                {% for s in ['confirmed','dispatched','shipped','out_for_delivery','delivered','ready_for_pickup','completed','cancelled'] %}
                 <option value="{{ s }}" {% if o.status==s %}selected{% endif %}>{{ s|replace('_',' ')|title }}</option>
                 {% endfor %}
               </select>
