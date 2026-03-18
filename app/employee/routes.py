@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from functools import wraps
 from app.models import (db, User, Employee, Shift, Task, MonthlySalary, Order,
                         OrderItem, LeaveRequest, ClockRecord, Notice,
-                        TrainingResource, SalesTarget)
+                        TrainingResource, SalesTarget, Product, Category, ProductVariant)
 from datetime import date, datetime, timedelta
 import calendar
 
@@ -256,3 +256,144 @@ def training_detail(rid):
     emp      = get_emp()
     resource = TrainingResource.query.get_or_404(rid)
     return render_template('employee/training_detail.html', emp=emp, resource=resource)
+
+
+# ── POS BILLING ─────────────────────────────────────────────────────
+@employee_bp.route('/pos')
+@employee_required
+def pos_billing():
+    """Unified POS billing screen with customer lookup"""
+    emp = get_emp()
+    if not emp:
+        flash('Employee profile not found. Contact admin.', 'warning')
+        return redirect(url_for('auth.logout'))
+    
+    products = Product.query.filter_by(is_active=True).all()
+    categories = Category.query.all()
+    employees = Employee.query.join(User).filter(User.is_active_account == True).all()
+    
+    return render_template('shared/pos_unified.html',
+        products=products, categories=categories, employees=employees, emp=emp)
+
+
+@employee_bp.route('/api/products')
+@employee_required
+def api_products():
+    """API to get products for POS"""
+    try:
+        category_id = request.args.get('category_id', type=int)
+        
+        query = Product.query.filter_by(is_active=True)
+        if category_id:
+            query = query.filter_by(category_id=category_id)
+        
+        products = query.all()
+        
+        products_data = []
+        for product in products:
+            variants = ProductVariant.query.filter_by(product_id=product.id).all()
+            products_data.append({
+                'id': product.id,
+                'name': product.name,
+                'brand': product.brand.name if product.brand else 'Unknown',
+                'price': float(product.price),
+                'image': product.image_filename,
+                'category': product.category.name if product.category else 'Unknown',
+                'variants': [
+                    {
+                        'id': variant.id,
+                        'size': variant.size,
+                        'stock_quantity': variant.stock_quantity,
+                        'barcode': variant.barcode
+                    }
+                    for variant in variants
+                ]
+            })
+        
+        return jsonify({'success': True, 'products': products_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@employee_bp.route('/api/categories')
+@employee_required
+def api_categories():
+    """API to get categories for POS"""
+    try:
+        categories = Category.query.all()
+        return jsonify({
+            'success': True,
+            'categories': [
+                {'id': cat.id, 'name': cat.name}
+                for cat in categories
+            ]
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@employee_bp.route('/api/pos/complete-sale', methods=['POST'])
+@employee_required
+def complete_pos_sale():
+    """Complete a POS sale"""
+    try:
+        emp = get_emp()
+        data = request.get_json()
+        
+        cart_items = data.get('cart_items', [])
+        customer_id = data.get('customer_id')
+        total_amount = data.get('total_amount')
+        
+        if not cart_items:
+            return jsonify({'success': False, 'error': 'Cart is empty'}), 400
+        
+        # Generate order number
+        order_number = f"POS-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        
+        # Create POS order
+        order = Order(
+            order_number=order_number,
+            user_id=customer_id or None,  # None for walk-in customers
+            order_type='pos',
+            status='completed',
+            subtotal=data.get('subtotal', 0),
+            tax_amount=data.get('tax', 0),
+            total_amount=total_amount,
+            payment_method='cash',
+            payment_status='paid',
+            processed_by_id=emp.id,
+            customer_notes=f"Employee code: {emp.employee_code}" if emp.employee_code else None
+        )
+        
+        db.session.add(order)
+        db.session.flush()  # Get order ID
+        
+        # Add order items
+        for item in cart_items:
+            order_item = OrderItem(
+                order_id=order.id,
+                product_id=item['product_id'],
+                variant_id=item['variant_id'],
+                quantity=item['quantity'],
+                unit_price=item['price'],
+                total_price=item['price'] * item['quantity']
+            )
+            db.session.add(order_item)
+            
+            # Update stock
+            variant = ProductVariant.query.get(item['variant_id'])
+            if variant and variant.stock_quantity >= item['quantity']:
+                variant.stock_quantity -= item['quantity']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'order_number': order_number,
+            'message': 'Sale completed successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500

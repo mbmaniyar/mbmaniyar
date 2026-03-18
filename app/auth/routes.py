@@ -126,6 +126,129 @@ def resend_verification():
         return redirect(url_for('auth.login'))
     return render_template('auth/resend_verification.html')
 
+# ── FORGOT PASSWORD OTP ────────────────────────────────────────────────
+@auth_bp.route('/forgot-password-otp', methods=['GET','POST'])
+def forgot_password_otp():
+    """OTP-based forgot password"""
+    if request.method == 'POST':
+        contact = request.form.get('contact', '').strip()
+        
+        if not contact:
+            flash('Please enter email or phone number', 'danger')
+            return render_template('auth/forgot_password_otp.html')
+        
+        # Find user by email or phone
+        user = User.query.filter(
+            (User.email == contact) | (User.phone == contact) | (User.username == contact)
+        ).first()
+        
+        if not user:
+            # Don't reveal if user exists or not
+            flash('If an account exists, OTP will be sent', 'info')
+            return render_template('auth/forgot_password_otp.html')
+        
+        # Generate 6-digit OTP
+        import random
+        otp = str(random.randint(100000, 999999))
+        
+        # Hash OTP for security
+        from hashlib import sha256
+        otp_hash = sha256(otp.encode()).hexdigest()
+        
+        # Set OTP and expiry (10 minutes)
+        user.reset_otp = otp_hash
+        user.reset_otp_expiry = datetime.utcnow() + timedelta(minutes=10)
+        db.session.commit()
+        
+        try:
+            # Send OTP via email
+            from app.security_emails import send_otp_email
+            send_otp_email(user, otp)
+            flash('OTP sent to your email!', 'success')
+            print(f"\n🔐 OTP FOR TESTING: {otp}")
+            print(f"📧 Email: {user.email}")
+            print(f"👤 User: {user.full_name or user.username}")
+            print(f"⏰ Expires in 10 minutes")
+            print("=" * 50)
+        except Exception as e:
+            print(f'OTP sending error: {e}')
+            print(f"\n🔐 OTP FOR TESTING (email failed): {otp}")
+            print(f"📧 Email: {user.email}")
+            print(f"👤 User: {user.full_name or user.username}")
+            print(f"⏰ Expires in 10 minutes")
+            print("=" * 50)
+            flash('OTP generated! Check console for testing code.', 'info')
+        
+        return render_template('auth/forgot_password_otp.html')
+    
+    return render_template('auth/forgot_password_otp.html')
+
+
+@auth_bp.route('/verify-otp', methods=['POST'])
+def verify_otp():
+    """Verify OTP and allow password reset"""
+    otp = request.form.get('otp', '').strip()
+    
+    if not otp or len(otp) != 6:
+        flash('Please enter a valid 6-digit OTP', 'danger')
+        return redirect(url_for('auth.forgot_password_otp'))
+    
+    # Hash the OTP
+    from hashlib import sha256
+    otp_hash = sha256(otp.encode()).hexdigest()
+    
+    # Find user with this OTP
+    user = User.query.filter_by(reset_otp=otp_hash).first()
+    
+    if not user or not user.reset_otp_expiry or user.reset_otp_expiry < datetime.utcnow():
+        flash('Invalid or expired OTP', 'danger')
+        return redirect(url_for('auth.forgot_password_otp'))
+    
+    # OTP is valid, allow password reset
+    flash('OTP verified! You can now reset your password.', 'success')
+    return redirect(url_for('auth.reset_password_with_otp', user_id=user.id))
+
+
+@auth_bp.route('/reset-password-otp/<int:user_id>', methods=['GET','POST'])
+def reset_password_with_otp(user_id):
+    """Reset password after OTP verification"""
+    user = User.query.get_or_404(user_id)
+    
+    # Check if OTP was verified recently (within 15 minutes)
+    if not user.reset_otp_expiry or user.reset_otp_expiry < datetime.utcnow() - timedelta(minutes=5):
+        flash('OTP expired. Please request a new one.', 'danger')
+        return redirect(url_for('auth.forgot_password_otp'))
+    
+    if request.method == 'POST':
+        new_password = request.form.get('new_password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+        
+        if len(new_password) < 6:
+            flash('Password must be at least 6 characters', 'danger')
+            return render_template('auth/reset_password_otp.html')
+        
+        if new_password != confirm_password:
+            flash('Passwords do not match', 'danger')
+            return render_template('auth/reset_password_otp.html')
+        
+        # Update password
+        user.password_hash = generate_password_hash(new_password)
+        user.reset_otp = None
+        user.reset_otp_expiry = None
+        db.session.commit()
+        
+        try:
+            from app.security_emails import send_password_changed_alert
+            send_password_changed_alert(user, request)
+        except Exception as e:
+            print(f'Password alert error: {e}')
+        
+        flash('Password reset successfully! You can now login.', 'success')
+        return redirect(url_for('auth.login'))
+    
+    return render_template('auth/reset_password_otp.html')
+
+
 # ── FORGOT PASSWORD ────────────────────────────────────────────────
 @auth_bp.route('/forgot-password', methods=['GET','POST'])
 def forgot_password():

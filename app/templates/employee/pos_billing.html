@@ -1,0 +1,524 @@
+{% extends 'employee/base_employee.html' %}
+{% block title %}POS Billing{% endblock %}
+{% block page_title %}POS Billing System{% endblock %}
+{% block content %}
+
+<style>
+.pos-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.customer-search-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.phone-search-input {
+  font-size: 1.2rem;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 25px;
+  width: 300px;
+}
+
+.search-btn {
+  background: #28a745;
+  border: none;
+  color: white;
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+.search-btn:hover {
+  background: #218838;
+}
+
+.pos-grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 20px;
+}
+
+.cart-section {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.products-section {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.cart-item {
+  border-bottom: 1px solid #eee;
+  padding: 10px 0;
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.cart-total {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.product-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.product-card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.product-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.size-selector {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.size-btn {
+  padding: 5px 10px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.size-btn:hover {
+  background: #007bff;
+  color: white;
+}
+
+.size-btn.selected {
+  background: #007bff;
+  color: white;
+}
+
+.size-btn.out-of-stock {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.customer-info-badge {
+  background: #28a745;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  display: inline-block;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.action-buttons .btn {
+  flex: 1;
+}
+</style>
+
+<div class="pos-container">
+  <!-- Customer Search Section -->
+  <div class="customer-search-section">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <h4 class="mb-2">🔍 Customer Lookup</h4>
+        <p class="mb-0">Enter customer phone number to view insights and wishlist</p>
+      </div>
+      <div class="d-flex align-items-center">
+        <input type="text" 
+               id="customerPhoneSearch" 
+               class="phone-search-input" 
+               placeholder="10-digit phone number"
+               maxlength="10">
+        <button class="search-btn" id="customerSearchBtn">
+          <i class="bi bi-search me-2"></i>Lookup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current Customer Info (if any) -->
+  <div id="currentCustomerInfo" style="display: none;">
+    <div class="customer-info-badge">
+      <i class="bi bi-person-circle me-2"></i>
+      <span id="currentCustomerName"></span> - ₹<span id="currentCustomerLTV"></span> LTV
+    </div>
+  </div>
+
+  <!-- Main POS Grid -->
+  <div class="pos-grid">
+    <!-- Products Section -->
+    <div class="products-section">
+      <h5 class="mb-3">📦 Products</h5>
+      
+      <!-- Category Filter -->
+      <div class="mb-3">
+        <select class="form-select" id="categoryFilter">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      
+      <!-- Products Grid -->
+      <div class="product-grid" id="productsGrid">
+        <!-- Products will be loaded here -->
+      </div>
+    </div>
+
+    <!-- Cart Section -->
+    <div class="cart-section">
+      <h5 class="mb-3">🛒 Cart</h5>
+      
+      <!-- Cart Items -->
+      <div id="cartItems">
+        <div class="text-muted text-center py-4">
+          <i class="bi bi-cart display-4"></i>
+          <p>Cart is empty</p>
+        </div>
+      </div>
+      
+      <!-- Cart Total -->
+      <div class="cart-total" id="cartTotal" style="display: none;">
+        <div class="d-flex justify-content-between mb-2">
+          <span>Subtotal:</span>
+          <strong>₹<span id="subtotal">0.00</span></strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Tax (18%):</span>
+          <strong>₹<span id="tax">0.00</span></strong>
+        </div>
+        <div class="d-flex justify-content-between">
+          <h6>Total:</h6>
+          <h6>₹<span id="total">0.00</span></h6>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-secondary" onclick="clearCart()">
+          <i class="bi bi-trash me-2"></i>Clear
+        </button>
+        <button class="btn btn-success" onclick="completeSale()">
+          <i class="bi bi-check-circle me-2"></i>Complete Sale
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include Customer Insights Modal -->
+{% include 'employee/customer_insights_modal.html' %}
+
+<script>
+// POS Billing JavaScript
+let cart = [];
+let selectedCustomer = null;
+
+// Initialize POS
+document.addEventListener('DOMContentLoaded', function() {
+  loadProducts();
+  loadCategories();
+});
+
+function loadProducts() {
+  // Load products from API
+  fetch('/staff/api/products')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        displayProducts(data.products);
+      }
+    })
+    .catch(error => console.error('Error loading products:', error));
+}
+
+function loadCategories() {
+  // Load categories
+  fetch('/staff/api/categories')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const select = document.getElementById('categoryFilter');
+        data.categories.forEach(category => {
+          const option = document.createElement('option');
+          option.value = category.id;
+          option.textContent = category.name;
+          select.appendChild(option);
+        });
+      }
+    });
+}
+
+function displayProducts(products) {
+  const grid = document.getElementById('productsGrid');
+  grid.innerHTML = '';
+  
+  products.forEach(product => {
+    const productCard = document.createElement('div');
+    productCard.className = 'product-card';
+    productCard.innerHTML = `
+      <img src="${product.image || '/static/img/placeholder.jpg'}" alt="${product.name}">
+      <h6>${product.name}</h6>
+      <p class="text-muted">${product.brand}</p>
+      <p class="fw-bold">₹${product.price}</p>
+      <div class="size-selector">
+        ${product.variants.map(variant => `
+          <button class="size-btn ${variant.stock_quantity === 0 ? 'out-of-stock' : ''}" 
+                  data-product-id="${product.id}"
+                  data-variant-id="${variant.id}"
+                  data-size="${variant.size}"
+                  data-price="${product.price}"
+                  data-stock="${variant.stock_quantity}"
+                  onclick="selectSize(this)">
+            ${variant.size}
+          </button>
+        `).join('')}
+      </div>
+    `;
+    grid.appendChild(productCard);
+  });
+}
+
+function selectSize(button) {
+  // Remove previous selection
+  const allSizeBtns = document.querySelectorAll('.size-btn.selected');
+  allSizeBtns.forEach(btn => btn.classList.remove('selected'));
+  
+  // Add selection to clicked button
+  button.classList.add('selected');
+  
+  // Add to cart
+  const productId = button.dataset.productId;
+  const variantId = button.dataset.variantId;
+  const size = button.dataset.size;
+  const price = parseFloat(button.dataset.price);
+  const stock = parseInt(button.dataset.stock);
+  
+  if (stock === 0) {
+    alert('This size is out of stock');
+    return;
+  }
+  
+  addToCart({
+    product_id: productId,
+    variant_id: variantId,
+    size: size,
+    price: price,
+    quantity: 1
+  });
+}
+
+function addToCart(item) {
+  // Check if item already in cart
+  const existingItem = cart.find(cartItem => 
+    cartItem.variant_id === item.variant_id
+  );
+  
+  if (existingItem) {
+    existingItem.quantity += 1;
+  } else {
+    // Get product details
+    const productCard = document.querySelector(`[data-variant-id="${item.variant_id}"]`).closest('.product-card');
+    const productName = productCard.querySelector('h6').textContent;
+    const brand = productCard.querySelector('.text-muted').textContent;
+    
+    cart.push({
+      ...item,
+      product_name: productName,
+      brand: brand
+    });
+  }
+  
+  updateCartDisplay();
+}
+
+function updateCartDisplay() {
+  const cartItems = document.getElementById('cartItems');
+  const cartTotal = document.getElementById('cartTotal');
+  
+  if (cart.length === 0) {
+    cartItems.innerHTML = `
+      <div class="text-muted text-center py-4">
+        <i class="bi bi-cart display-4"></i>
+        <p>Cart is empty</p>
+      </div>
+    `;
+    cartTotal.style.display = 'none';
+    return;
+  }
+  
+  // Display cart items
+  cartItems.innerHTML = cart.map((item, index) => `
+    <div class="cart-item">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h6>${item.product_name}</h6>
+          <small class="text-muted">${item.brand} | Size: ${item.size}</small>
+        </div>
+        <div class="d-flex align-items-center">
+          <div class="btn-group btn-group-sm me-2">
+            <button class="btn btn-outline-secondary" onclick="updateQuantity(${index}, -1)">-</button>
+            <button class="btn btn-outline-secondary" disabled>${item.quantity}</button>
+            <button class="btn btn-outline-secondary" onclick="updateQuantity(${index}, 1)">+</button>
+          </div>
+          <strong>₹${(item.price * item.quantity).toFixed(2)}</strong>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  
+  // Calculate totals
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const tax = subtotal * 0.18;
+  const total = subtotal + tax;
+  
+  document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+  document.getElementById('tax').textContent = tax.toFixed(2);
+  document.getElementById('total').textContent = total.toFixed(2);
+  
+  cartTotal.style.display = 'block';
+}
+
+function updateQuantity(index, change) {
+  cart[index].quantity += change;
+  
+  if (cart[index].quantity <= 0) {
+    cart.splice(index, 1);
+  }
+  
+  updateCartDisplay();
+}
+
+function clearCart() {
+  if (cart.length > 0 && confirm('Are you sure you want to clear the cart?')) {
+    cart = [];
+    selectedCustomer = null;
+    updateCartDisplay();
+    document.getElementById('currentCustomerInfo').style.display = 'none';
+  }
+}
+
+function completeSale() {
+  if (cart.length === 0) {
+    alert('Cart is empty');
+    return;
+  }
+  
+  // TODO: Implement sale completion logic
+  const customerInfo = selectedCustomer ? `Customer: ${selectedCustomer.name}` : 'Walk-in customer';
+  const total = document.getElementById('total').textContent;
+  
+  if (confirm(`Complete sale?\n${customerInfo}\nTotal: ₹${total}`)) {
+    // Process sale
+    alert('Sale completed successfully!');
+    cart = [];
+    selectedCustomer = null;
+    updateCartDisplay();
+    document.getElementById('currentCustomerInfo').style.display = 'none';
+  }
+}
+
+// Customer lookup integration
+function lookupCustomer() {
+  const phone = document.getElementById('customerPhoneSearch').value.trim();
+  
+  if (!phone) {
+    alert('Please enter a phone number');
+    return;
+  }
+  
+  // Show loading
+  showLoading();
+  
+  // Make API call
+  fetch('/staff/api/customer/lookup', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ phone: phone })
+  })
+  .then(response => response.json())
+  .then(data => {
+    hideLoading();
+    
+    if (data.success) {
+      displayCustomerInsights(data.customer);
+      setSelectedCustomer(data.customer);
+    } else {
+      showCustomerNotFound(data.error);
+    }
+  })
+  .catch(error => {
+    hideLoading();
+    console.error('Error:', error);
+    alert('An error occurred while looking up customer');
+  });
+}
+
+function setSelectedCustomer(customer) {
+  selectedCustomer = customer.customer;
+  
+  // Update current customer info display
+  document.getElementById('currentCustomerName').textContent = selectedCustomer.name;
+  document.getElementById('currentCustomerLTV').textContent = customer.lifetime_value.total_lifetime_value.toFixed(2);
+  document.getElementById('currentCustomerInfo').style.display = 'block';
+}
+
+// Category filter
+document.getElementById('categoryFilter')?.addEventListener('change', function(e) {
+  const categoryId = e.target.value;
+  // TODO: Filter products by category
+  console.log('Filter by category:', categoryId);
+});
+
+// Phone search on enter
+document.getElementById('customerPhoneSearch')?.addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    lookupCustomer();
+  }
+});
+</script>
+
+{% endblock %}

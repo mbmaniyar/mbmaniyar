@@ -1,0 +1,409 @@
+<!-- Customer Insights Modal -->
+<div class="modal fade" id="customerInsightsModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-person-badge me-2"></i>
+          Customer Insights: <span id="modalCustomerName">Loading...</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Loading State -->
+        <div id="customerLoading" class="text-center py-4" style="display: none;">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading customer information...</p>
+        </div>
+
+        <!-- Customer Not Found -->
+        <div id="customerNotFound" class="text-center py-4" style="display: none;">
+          <i class="bi bi-person-x display-1 text-muted"></i>
+          <h5 class="mt-3">Customer Not Found</h5>
+          <p class="text-muted">No customer found with this phone number.</p>
+        </div>
+
+        <!-- Customer Insights Content -->
+        <div id="customerContent" style="display: none;">
+          <!-- Customer Overview -->
+          <div class="row mb-4">
+            <div class="col-md-8">
+              <div class="card">
+                <div class="card-header">
+                  <h6 class="mb-0">
+                    <i class="bi bi-person-circle me-2"></i>
+                    Customer Information
+                  </h6>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <p><strong>Name:</strong> <span id="customerName"></span></p>
+                      <p><strong>Phone:</strong> <span id="customerPhone"></span></p>
+                      <p><strong>Email:</strong> <span id="customerEmail"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                      <p><strong>Member Since:</strong> <span id="customerMemberSince"></span></p>
+                      <p><strong>Total Orders:</strong> <span id="customerTotalOrders"></span></p>
+                      <p><strong>Status:</strong> 
+                        <span id="customerStatus" class="badge"></span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-gradient-primary text-white">
+                <div class="card-body text-center">
+                  <h6 class="card-title">Lifetime Value</h6>
+                  <h2 class="display-6">₹<span id="customerLifetimeValue">0</span></h2>
+                  <small>
+                    Online: ₹<span id="onlineValue">0</span> | 
+                    POS: ₹<span id="posValue">0</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Size Preferences -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">
+                  <h6 class="mb-0">
+                    <i class="bi bi-rulers me-2"></i>
+                    Size Preferences
+                  </h6>
+                </div>
+                <div class="card-body">
+                  <div id="sizePreferences" class="row">
+                    <!-- Size preferences will be populated here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wishlist Items -->
+          <div class="row">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h6 class="mb-0">
+                    <i class="bi bi-heart me-2"></i>
+                    Online Wishlist
+                  </h6>
+                  <span class="badge bg-secondary" id="wishlistCount">0 items</span>
+                </div>
+                <div class="card-body">
+                  <div id="wishlistItems" class="row">
+                    <!-- Wishlist items will be populated here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="addToCartBtn" style="display: none;">
+          <i class="bi bi-cart-plus me-2"></i>
+          Add Selected to Cart
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.size-preference {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-left: 4px solid #007bff;
+}
+
+.wishlist-item {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+}
+
+.wishlist-item:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.wishlist-item.in-stock {
+  border-left: 4px solid #28a745;
+}
+
+.wishlist-item.out-of-stock {
+  border-left: 4px solid #dc3545;
+  opacity: 0.7;
+}
+
+.wishlist-item img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.wishlist-item .product-info {
+  flex: 1;
+}
+
+.wishlist-item .price {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.wishlist-item .stock-badge {
+  font-size: 0.8rem;
+}
+
+.size-badge {
+  background: #6c757d;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+</style>
+
+<script>
+// Customer Insights JavaScript
+let currentCustomer = null;
+let selectedWishlistItems = new Set();
+
+// Initialize customer lookup
+document.addEventListener('DOMContentLoaded', function() {
+  // Setup phone search
+  const phoneSearch = document.getElementById('customerPhoneSearch');
+  const searchBtn = document.getElementById('customerSearchBtn');
+  
+  if (phoneSearch && searchBtn) {
+    searchBtn.addEventListener('click', lookupCustomer);
+    phoneSearch.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        lookupCustomer();
+      }
+    });
+  }
+});
+
+function lookupCustomer() {
+  const phone = document.getElementById('customerPhoneSearch').value.trim();
+  
+  if (!phone) {
+    alert('Please enter a phone number');
+    return;
+  }
+  
+  // Show loading
+  showLoading();
+  
+  // Make API call
+  fetch('/staff/api/customer/lookup', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ phone: phone })
+  })
+  .then(response => response.json())
+  .then(data => {
+    hideLoading();
+    
+    if (data.success) {
+      displayCustomerInsights(data.customer);
+    } else {
+      showCustomerNotFound(data.error);
+    }
+  })
+  .catch(error => {
+    hideLoading();
+    console.error('Error:', error);
+    alert('An error occurred while looking up customer');
+  });
+}
+
+function showLoading() {
+  document.getElementById('customerLoading').style.display = 'block';
+  document.getElementById('customerContent').style.display = 'none';
+  document.getElementById('customerNotFound').style.display = 'none';
+}
+
+function hideLoading() {
+  document.getElementById('customerLoading').style.display = 'none';
+}
+
+function showCustomerNotFound(message) {
+  document.getElementById('customerNotFound').style.display = 'block';
+  document.getElementById('customerContent').style.display = 'none';
+  document.getElementById('customerNotFound').querySelector('p').textContent = message;
+}
+
+function displayCustomerInsights(customer) {
+  currentCustomer = customer;
+  
+  // Show content
+  document.getElementById('customerContent').style.display = 'block';
+  document.getElementById('customerNotFound').style.display = 'none';
+  
+  // Update modal title with customer name
+  document.getElementById('modalCustomerName').textContent = customer.customer.name;
+  
+  // Populate customer info
+  document.getElementById('customerName').textContent = customer.customer.name;
+  document.getElementById('customerPhone').textContent = customer.customer.phone;
+  document.getElementById('customerEmail').textContent = customer.customer.email || 'N/A';
+  document.getElementById('customerMemberSince').textContent = customer.customer.member_since;
+  document.getElementById('customerTotalOrders').textContent = customer.lifetime_value.total_orders_count;
+  
+  // Status badge
+  const statusEl = document.getElementById('customerStatus');
+  statusEl.textContent = customer.customer.is_active ? 'Active' : 'Inactive';
+  statusEl.className = `badge ${customer.customer.is_active ? 'bg-success' : 'bg-danger'}`;
+  
+  // Lifetime value
+  document.getElementById('customerLifetimeValue').textContent = customer.lifetime_value.total_lifetime_value.toFixed(2);
+  document.getElementById('onlineValue').textContent = customer.lifetime_value.online_orders_value.toFixed(2);
+  document.getElementById('posValue').textContent = customer.lifetime_value.pos_orders_value.toFixed(2);
+  
+  // Size preferences
+  displaySizePreferences(customer.size_preferences);
+  
+  // Wishlist
+  displayWishlistItems(customer.wishlist);
+  
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('customerInsightsModal'));
+  modal.show();
+}
+
+function displaySizePreferences(sizePreferences) {
+  const container = document.getElementById('sizePreferences');
+  container.innerHTML = '';
+  
+  Object.entries(sizePreferences).forEach(([category, preference]) => {
+    const sizeEl = document.createElement('div');
+    sizeEl.className = 'col-md-4';
+    sizeEl.innerHTML = `
+      <div class="size-preference">
+        <h6>${category}</h6>
+        <div class="d-flex align-items-center">
+          <span class="size-badge">${preference.preferred_size}</span>
+          <small class="ms-2 text-muted">
+            ${preference.frequency}/${preference.total_purchases} purchases
+          </small>
+        </div>
+      </div>
+    `;
+    container.appendChild(sizeEl);
+  });
+}
+
+function displayWishlistItems(wishlist) {
+  const container = document.getElementById('wishlistItems');
+  container.innerHTML = '';
+  
+  document.getElementById('wishlistCount').textContent = `${wishlist.length} items`;
+  
+  if (wishlist.length === 0) {
+    container.innerHTML = '<p class="text-muted">No items in wishlist</p>';
+    document.getElementById('addToCartBtn').style.display = 'none';
+    return;
+  }
+  
+  wishlist.forEach(item => {
+    const itemEl = document.createElement('div');
+    itemEl.className = `col-md-6 wishlist-item ${item.in_stock ? 'in-stock' : 'out-of-stock'}`;
+    
+    const imageUrl = item.image ? `/static/uploads/${item.image}` : '/static/img/placeholder.jpg';
+    
+    itemEl.innerHTML = `
+      <div class="d-flex align-items-center">
+        <img src="${imageUrl}" alt="${item.product_name}" class="me-3">
+        <div class="product-info">
+          <h6>${item.product_name}</h6>
+          <small class="text-muted">${item.brand} | ${item.category}</small>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <span class="size-badge">${item.size}</span>
+            <span class="price">₹${item.price.toFixed(2)}</span>
+          </div>
+          <div class="mt-1">
+            <span class="stock-badge ${item.in_stock ? 'text-success' : 'text-danger'}">
+              ${item.in_stock ? `${item.stock_level} in stock` : 'Out of stock'}
+            </span>
+          </div>
+        </div>
+        <div class="ms-3">
+          <input type="checkbox" class="form-check-input wishlist-checkbox" 
+                 data-item-id="${item.id}" 
+                 data-variant-id="${item.variant_id}"
+                 data-product-name="${item.product_name}"
+                 data-size="${item.size}"
+                 data-price="${item.price}"
+                 ${!item.in_stock ? 'disabled' : ''}>
+        </div>
+      </div>
+    `;
+    
+    container.appendChild(itemEl);
+  });
+  
+  // Show add to cart button if there are in-stock items
+  const inStockItems = wishlist.filter(item => item.in_stock);
+  document.getElementById('addToCartBtn').style.display = inStockItems.length > 0 ? 'block' : 'none';
+}
+
+// Add to cart functionality
+document.getElementById('addToCartBtn')?.addEventListener('click', function() {
+  const checkboxes = document.querySelectorAll('.wishlist-checkbox:checked');
+  
+  if (checkboxes.length === 0) {
+    alert('Please select items to add to cart');
+    return;
+  }
+  
+  const itemsToAdd = [];
+  checkboxes.forEach(checkbox => {
+    itemsToAdd.push({
+      cart_item_id: checkbox.dataset.itemId,
+      variant_id: checkbox.dataset.variantId,
+      product_name: checkbox.dataset.productName,
+      size: checkbox.dataset.size,
+      price: parseFloat(checkbox.dataset.price),
+      quantity: 1
+    });
+  });
+  
+  // Add items to POS cart (this depends on your POS implementation)
+  addToPosCart(itemsToAdd);
+});
+
+function addToPosCart(items) {
+  // This function needs to be implemented based on your POS cart system
+  // For now, we'll just show a success message
+  
+  const itemNames = items.map(item => `${item.product_name} (${item.size})`).join(', ');
+  
+  if (confirm(`Add these items to cart:\n${itemNames}`)) {
+    // TODO: Implement actual POS cart addition
+    alert('Items added to cart successfully!');
+    
+    // Close modal
+    bootstrap.Modal.getInstance(document.getElementById('customerInsightsModal')).hide();
+  }
+}
+</script>

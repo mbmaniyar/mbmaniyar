@@ -360,10 +360,11 @@ def update_order(oid):
 @admin_bp.route('/pos')
 @admin_required
 def pos():
+    """Unified POS billing system with clienteling"""
     products   = Product.query.filter_by(is_active=True).all()
     categories = Category.query.all()
     employees  = Employee.query.join(User).filter(User.is_active_account == True).all()
-    return render_template('admin/pos.html',
+    return render_template('shared/pos_unified.html',
         products=products, categories=categories, employees=employees)
 
 @admin_bp.route('/pos/search')

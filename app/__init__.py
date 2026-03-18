@@ -29,12 +29,21 @@ def create_app():
 
     from app.admin.routes import admin_bp
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    
+    from app.shared.pos_api import admin_pos_api_bp
+    app.register_blueprint(admin_pos_api_bp, url_prefix='/admin')
 
     from app.customer.routes import customer_bp
     app.register_blueprint(customer_bp, url_prefix='/shop')
 
     from app.employee.routes import employee_bp
     app.register_blueprint(employee_bp, url_prefix='/staff')
+    
+    from app.shared.pos_api import employee_pos_api_bp
+    app.register_blueprint(employee_pos_api_bp, url_prefix='/staff')
+    
+    from app.employee.customer_api import customer_api_bp
+    app.register_blueprint(customer_api_bp, url_prefix='/staff')
 
 
     # Make datetime.now() available in all templates

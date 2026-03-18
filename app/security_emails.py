@@ -6,6 +6,94 @@ import os
 from datetime import datetime
 
 
+def send_otp_email(user, otp):
+    """Send OTP email for password reset"""
+    try:
+        from flask import current_app, render_template_string
+        from flask_mail import Message
+        
+        # Create HTML email template
+        html_template = """
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OTP Password Reset - M.B Maniyar</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #7B1C2E, #9E2A3F); color: white; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; }
+        .content { padding: 40px 30px; }
+        .otp-box { background: #f8f9fa; border: 2px dashed #7B1C2E; border-radius: 10px; padding: 20px; text-align: center; margin: 30px 0; }
+        .otp-code { font-size: 36px; font-weight: bold; color: #7B1C2E; letter-spacing: 8px; margin: 10px 0; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+        .security-note { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Password Reset OTP</h1>
+            <p>M.B Maniyar Cloth Store</p>
+        </div>
+        
+        <div class="content">
+            <p>Hello <strong>{{ user_name }}</strong>,</p>
+            
+            <p>You requested to reset your password for your M.B Maniyar account. Use the OTP code below to proceed:</p>
+            
+            <div class="otp-box">
+                <p>Your OTP code is:</p>
+                <div class="otp-code">{{ otp }}</div>
+                <p style="color: #666; font-size: 14px;">This code expires in 10 minutes</p>
+            </div>
+            
+            <div class="security-note">
+                <strong>🔒 Security Notice:</strong> Never share this OTP with anyone. Our staff will never ask for your OTP.
+            </div>
+            
+            <p>If you didn't request this password reset, please ignore this email or contact our support team.</p>
+            
+            <p>Best regards,<br>
+            The M.B Maniyar Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2024 M.B Maniyar Cloth Store · Mantha</p>
+            <p>This is an automated message. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        # Render the template
+        html_content = render_template_string(html_template, 
+                                            user_name=user.full_name or user.username,
+                                            otp=otp)
+        
+        # Create message
+        msg = Message(
+            subject=f"🔐 Password Reset OTP - M.B Maniyar",
+            recipients=[user.email],
+            html=html_content,
+            sender=current_app.config.get('MAIL_DEFAULT_SENDER', 'M.B Maniyar <noreply@mbmaniyar.com>')
+        )
+        
+        # Send email
+        mail = current_app.extensions.get('mail')
+        if mail:
+            mail.send(msg)
+            print(f"OTP email sent to {user.email}")
+        else:
+            print("Mail service not available")
+            
+    except Exception as e:
+        print(f"Error sending OTP email: {e}")
+        raise e
+
+
 def get_device_info(request):
     """Gets browser, OS and IP from the HTTP request."""
     ua = request.headers.get('User-Agent', 'Unknown')

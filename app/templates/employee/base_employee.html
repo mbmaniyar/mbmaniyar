@@ -149,6 +149,9 @@ body{font-family:var(--ff);background:var(--bg);color:var(--text);min-height:100
     </a>
 
     <div class="sb-section">Store</div>
+    <a href="{{ url_for('employee.pos_billing') }}" class="sb-link {% if request.endpoint=='employee.pos_billing' %}active{% endif %}">
+      <i class="bi bi-cash-stack"></i> POS Billing
+    </a>
     <a href="{{ url_for('employee.notices') }}" class="sb-link {% if request.endpoint=='employee.notices' %}active{% endif %}">
       <i class="bi bi-megaphone"></i> Notice Board
     </a>

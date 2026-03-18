@@ -18,6 +18,8 @@ class User(UserMixin, db.Model):
     verification_token  = db.Column(db.String(100))
     reset_token         = db.Column(db.String(100))
     reset_token_expiry  = db.Column(db.DateTime)
+    reset_otp           = db.Column(db.String(64))
+    reset_otp_expiry    = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     orders = db.relationship('Order', backref='customer', lazy=True,
                               foreign_keys='Order.user_id')

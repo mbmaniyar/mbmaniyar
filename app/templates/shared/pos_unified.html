@@ -1,0 +1,865 @@
+{% extends 'admin/base_admin.html' if current_user.role == 'admin' else 'employee/base_employee.html' %}
+{% block title %}POS Billing{% endblock %}
+{% block page_title %}⚡ Point of Sale{% endblock %}
+
+{% block extra_css %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+/* ── POS LAYOUT ── */
+:root{
+  --pos-bg:#080C14;--pos-panel:#0E1520;--pos-border:rgba(255,255,255,.07);
+  --amber:#F5A623;--amber2:#FFD166;--green:#06D6A0;--red:#EF476F;
+  --blue:#4A90E2;--purple:#9B5DE5;--ff-mono:'DM Mono',monospace;
+}
+
+.pos-wrap{
+  display:grid;
+  grid-template-columns:1fr 380px;
+  gap:0;
+  height:calc(100vh - 60px);
+  margin:-1.8rem;
+  background:var(--pos-bg);
+  overflow:hidden;
+}
+
+/* ── LEFT PANEL ── */
+.pos-left{
+  display:flex;flex-direction:column;
+  border-right:1px solid var(--pos-border);
+  overflow:hidden;
+}
+
+/* Customer Search Section */
+.customer-search-section {
+  background: linear-gradient(135deg, var(--amber) 0%, var(--amber2) 100%);
+  color: white;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--pos-border);
+}
+
+.customer-search-row {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.customer-search-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 0.7rem 1rem 0.7rem 2.8rem;
+  color: white;
+  font-family: var(--ff-mono);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.customer-search-input:focus {
+  border-color: white;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.customer-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.search-icon-customer {
+  position: relative;
+}
+
+.search-icon-customer i {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.7);
+  z-index: 1;
+}
+
+.customer-search-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 10px;
+  padding: 0.7rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.customer-search-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: white;
+}
+
+/* Current Customer Info */
+.current-customer-info {
+  background: rgba(6, 214, 160, 0.15);
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.current-customer-name {
+  color: var(--green);
+  font-weight: 600;
+  font-family: var(--ff-mono);
+}
+
+.current-customer-ltv {
+  color: white;
+  font-weight: 700;
+}
+
+/* Search bar */
+.pos-search-wrap{
+  padding:1rem 1.2rem;
+  background:var(--pos-panel);
+  border-bottom:1px solid var(--pos-border);
+}
+.pos-search-row{display:flex;gap:.7rem;align-items:center}
+.pos-search-input{
+  flex:1;background:rgba(255,255,255,.05);
+  border:1.5px solid var(--pos-border);
+  border-radius:10px;padding:.7rem 1rem .7rem 2.8rem;
+  color:#fff;font-family:var(--ff-mono);font-size:.95rem;
+  outline:none;transition:border-color .2s;
+}
+.pos-search-input:focus{border-color:var(--amber)}
+.pos-search-input::placeholder{color:rgba(255,255,255,.25)}
+.search-icon-pos{position:relative}
+.search-icon-pos i{position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);z-index:1}
+
+/* Search results dropdown */
+.search-results{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:500;
+  background:#141C2E;border:1px solid var(--amber);border-radius:10px;
+  overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);display:none;
+}
+.search-result-item{
+  padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid var(--pos-border);
+  transition:background .15s;display:flex;align-items:center;justify-content:space-between;
+}
+.search-result-item:hover{background:rgba(245,166,35,.1)}
+.search-result-item:last-child{border-bottom:none}
+.sri-name{font-size:.88rem;font-weight:600;color:#fff}
+.sri-meta{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:.1rem}
+.sri-right{text-align:right}
+.sri-price{font-family:var(--ff-mono);font-size:.9rem;color:var(--amber);font-weight:600}
+.sri-size{font-size:.72rem;background:rgba(255,255,255,.08);padding:.1rem .45rem;border-radius:4px;margin-bottom:.2rem;display:inline-block}
+.sri-stock{font-size:.7rem;color:var(--green)}
+
+/* Category quick tiles */
+.cat-bar{
+  padding:.7rem 1.2rem;border-bottom:1px solid var(--pos-border);
+  display:flex;gap:.5rem;overflow-x:auto;flex-shrink:0;
+}
+.cat-bar::-webkit-scrollbar{height:3px}
+.cat-bar::-webkit-scrollbar-thumb{background:var(--amber);border-radius:2px}
+.cat-chip{
+  white-space:nowrap;padding:.35rem .9rem;border-radius:6px;
+  font-size:.75rem;font-weight:600;border:1px solid var(--pos-border);
+  color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;background:none;
+}
+.cat-chip:hover,.cat-chip.active{
+  background:rgba(245,166,35,.15);border-color:var(--amber);color:var(--amber);
+}
+
+/* Quick product tiles grid */
+.quick-grid{
+  flex:1;overflow-y:auto;padding:1rem 1.2rem;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem;
+  align-content:start;
+}
+.quick-grid::-webkit-scrollbar{width:4px}
+.quick-grid::-webkit-scrollbar-thumb{background:var(--pos-border);border-radius:2px}
+
+.q-tile{
+  background:var(--pos-panel);border:1px solid var(--pos-border);
+  border-radius:12px;padding:.8rem;cursor:pointer;
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+  position:relative;overflow:hidden;
+}
+.q-tile:hover{border-color:var(--amber);transform:translateY(-2px);box-shadow:0 6px 20px rgba(245,166,35,.15)}
+.q-tile:active{transform:scale(.97)}
+.q-tile-emoji{font-size:1.8rem;margin-bottom:.4rem}
+.q-tile-brand{font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:.2rem}
+.q-tile-name{font-size:.78rem;font-weight:600;color:#fff;line-height:1.3;margin-bottom:.4rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;display:-moz-box;-moz-line-clamp:2;-moz-box-orient:vertical;overflow:hidden;line-clamp:2;max-height:2.6em}
+.q-tile-price{font-family:var(--ff-mono);font-size:.9rem;font-weight:700;color:var(--amber2)}
+.q-tile-sizes{display:flex;gap:.2rem;flex-wrap:wrap;margin-top:.4rem}
+.q-sz{font-size:.62rem;padding:.1rem .35rem;background:rgba(255,255,255,.07);border-radius:3px;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s}
+.q-sz:hover{background:var(--amber);color:#000}
+.q-sz.oos{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+.q-tile-stock{position:absolute;top:.5rem;right:.5rem;font-size:.62rem;font-weight:700;padding:.1rem .4rem;border-radius:50px}
+.stock-ok{background:rgba(6,214,160,.15);color:var(--green)}
+.stock-low{background:rgba(245,166,35,.15);color:var(--amber)}
+.stock-oos{background:rgba(239,71,111,.15);color:var(--red)}
+
+/* ── RIGHT PANEL — CART ── */
+.pos-right{
+  display:flex;flex-direction:column;
+  background:var(--pos-panel);
+  overflow:hidden;
+}
+
+.cart-header{
+  padding:1rem 1.2rem;border-bottom:1px solid var(--pos-border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.cart-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;letter-spacing:.5px;color:#fff}
+.cart-clear-btn{
+  background:rgba(239,71,111,.1);border:1px solid rgba(239,71,111,.2);
+  color:var(--red);border-radius:6px;padding:.3rem .7rem;
+  font-size:.75rem;cursor:pointer;transition:all .2s;
+}
+.cart-clear-btn:hover{background:var(--red);color:#fff}
+
+/* Customer + Employee row */
+.cart-meta{
+  padding:.7rem 1.2rem;border-bottom:1px solid var(--pos-border);
+  display:flex;gap:.6rem;flex-shrink:0;
+}
+.meta-input{
+  flex:1;background:rgba(255,255,255,.04);border:1px solid var(--pos-border);
+  color:#fff;border-radius:7px;padding:.45rem .7rem;font-size:.8rem;
+  font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;
+}
+.meta-input:focus{border-color:var(--amber)}
+.meta-input::placeholder{color:rgba(255,255,255,.25)}
+
+/* Cart items */
+.cart-items-wrap{
+  flex:1;overflow-y:auto;padding:.5rem;
+}
+.cart-items-wrap::-webkit-scrollbar{width:4px}
+.cart-items-wrap::-webkit-scrollbar-thumb{background:var(--pos-border);border-radius:2px}
+.cart-item{
+  background:rgba(255,255,255,.03);border:1px solid var(--pos-border);
+  border-radius:8px;padding:.8rem;margin-bottom:.6rem;
+  transition:all .2s;
+}
+.cart-item:hover{background:rgba(255,255,255,.05)}
+.ci-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.4rem}
+.ci-name{font-size:.85rem;font-weight:600;color:#fff;line-height:1.3}
+.ci-price{font-family:var(--ff-mono);font-size:.9rem;color:var(--amber);font-weight:600}
+.ci-meta{font-size:.7rem;color:rgba(255,255,255,.4)}
+.ci-qty-row{display:flex;align-items:center;gap:.6rem}
+.ci-qty-btn{
+  background:rgba(255,255,255,.07);border:1px solid var(--pos-border);
+  color:#fff;border-radius:4px;width:24px;height:24px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;font-size:.75rem;
+}
+.ci-qty-btn:hover{background:var(--amber);color:#000}
+.ci-qty{font-family:var(--ff-mono);font-size:.85rem;color:#fff;min-width:20px;text-align:center}
+.ci-total{font-family:var(--ff-mono);font-size:.95rem;color:#fff;font-weight:600;margin-left:auto}
+
+/* Cart totals */
+.cart-totals{
+  padding:1rem 1.2rem;border-top:1px solid var(--pos-border);
+  background:rgba(255,255,255,.02);
+}
+.total-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:.5rem;font-size:.85rem;
+}
+.total-row.grand{
+  border-top:1px solid var(--pos-border);padding-top:.6rem;
+  margin-top:.6rem;font-size:1rem;font-weight:700;
+}
+.total-label{color:rgba(255,255,255,.6)}
+.total-amount{font-family:var(--ff-mono);color:#fff}
+
+/* Checkout actions */
+.checkout-actions{
+  padding:1rem 1.2rem;border-top:1px solid var(--pos-border);
+  display:flex;flex-direction:column;gap:.6rem;
+}
+.action-btn{
+  background:var(--amber);border:none;color:#000;
+  border-radius:8px;padding:.7rem;font-weight:700;
+  cursor:pointer;transition:all .2s;font-family:'Syne',sans-serif;
+  letter-spacing:.3px;text-transform:uppercase;
+}
+.action-btn:hover{background:var(--amber2);transform:translateY(-1px)}
+.action-btn.secondary{background:transparent;border:1px solid var(--pos-border);color:rgba(255,255,255,.6)}
+.action-btn.secondary:hover{background:rgba(255,255,255,.05);color:#fff}
+.action-btn.danger{background:var(--red);color:#fff}
+.action-btn.danger:hover{background:#d63447}
+
+/* Empty cart */
+.empty-cart{
+  text-align:center;padding:2rem;color:rgba(255,255,255,.3);
+}
+.empty-cart i{font-size:3rem;margin-bottom:1rem;opacity:.5}
+.empty-cart p{font-size:.85rem}
+
+/* Loading */
+.loading-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(8,12,20,.9);z-index:9999;
+  display:flex;align-items:center;justify-content:center;
+}
+.loading-content{text-align:center}
+.loading-spinner{
+  width:40px;height:40px;border:3px solid var(--pos-border);
+  border-top-color:var(--amber);border-radius:50%;
+  animation:spin 1s linear infinite;margin:0 auto 1rem;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:rgba(255,255,255,.6);font-size:.85rem}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-wrap">
+  <!-- LEFT PANEL -->
+  <div class="pos-left">
+    
+    <!-- Customer Search Section -->
+    <div class="customer-search-section">
+      <div>
+        <h4 class="mb-2">🔍 Customer Lookup</h4>
+        <p class="mb-0 opacity-75">Enter customer phone number to view insights and wishlist</p>
+      </div>
+      <div class="customer-search-row">
+        <div class="search-icon-customer">
+          <i class="bi bi-search"></i>
+          <input type="text" 
+                 id="customerPhoneSearch" 
+                 class="customer-search-input" 
+                 placeholder="10-digit phone number"
+                 maxlength="10">
+        </div>
+        <button class="customer-search-btn" id="customerSearchBtn">
+          <i class="bi bi-search me-2"></i>Lookup
+        </button>
+      </div>
+      
+      <!-- Current Customer Info -->
+      <div id="currentCustomerInfo" style="display: none;">
+        <div class="current-customer-info">
+          <i class="bi bi-person-circle"></i>
+          <span class="current-customer-name" id="currentCustomerName"></span>
+          <span class="current-customer-ltv">- ₹<span id="currentCustomerLTV"></span> LTV</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Search -->
+    <div class="pos-search-wrap">
+      <div class="pos-search-row">
+        <div class="search-icon-pos">
+          <i class="bi bi-search"></i>
+          <input type="text" class="pos-search-input" id="productSearch" placeholder="Search products...">
+        </div>
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+
+    <!-- Category Bar -->
+    <div class="cat-bar" id="categoryBar">
+      <div class="cat-chip active" data-cat="">All</div>
+      <!-- Categories will be loaded here -->
+    </div>
+
+    <!-- Product Grid -->
+    <div class="quick-grid" id="productGrid">
+      <!-- Products will be loaded here -->
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL - CART -->
+  <div class="pos-right">
+    
+    <!-- Cart Header -->
+    <div class="cart-header">
+      <div class="cart-title">🛒 CART</div>
+      <button class="cart-clear-btn" onclick="clearCart()">Clear</button>
+    </div>
+
+    <!-- Customer & Employee Info -->
+    <div class="cart-meta">
+      <input type="text" class="meta-input" id="customerNameInput" placeholder="Customer name">
+      <input type="text" class="meta-input" id="employeeCodeInput" placeholder="Employee code">
+    </div>
+
+    <!-- Cart Items -->
+    <div class="cart-items-wrap" id="cartItemsWrap">
+      <div class="empty-cart">
+        <i class="bi bi-cart-x"></i>
+        <p>Cart is empty</p>
+      </div>
+    </div>
+
+    <!-- Cart Totals -->
+    <div class="cart-totals" id="cartTotals" style="display: none;">
+      <div class="total-row">
+        <span class="total-label">Subtotal</span>
+        <span class="total-amount" id="subtotal">₹0.00</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">Tax (18%)</span>
+        <span class="total-amount" id="tax">₹0.00</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">Discount</span>
+        <span class="total-amount" id="discount">₹0.00</span>
+      </div>
+      <div class="total-row grand">
+        <span class="total-label">TOTAL</span>
+        <span class="total-amount" id="total">₹0.00</span>
+      </div>
+    </div>
+
+    <!-- Checkout Actions -->
+    <div class="checkout-actions">
+      <button class="action-btn" onclick="completeSale()">
+        <i class="bi bi-check-circle me-2"></i>Complete Sale
+      </button>
+      <button class="action-btn secondary" onclick="holdSale()">
+        <i class="bi bi-pause-circle me-2"></i>Hold Sale
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Include Customer Insights Modal -->
+{% include 'employee/customer_insights_modal.html' %}
+
+<script>
+// Unified POS JavaScript
+let cart = [];
+let selectedCustomer = null;
+
+// Initialize POS
+document.addEventListener('DOMContentLoaded', function() {
+  loadProducts();
+  loadCategories();
+  setupEventListeners();
+});
+
+function setupEventListeners() {
+  // Customer search
+  const customerSearch = document.getElementById('customerPhoneSearch');
+  const customerSearchBtn = document.getElementById('customerSearchBtn');
+  
+  if (customerSearchBtn) {
+    customerSearchBtn.addEventListener('click', lookupCustomer);
+  }
+  
+  if (customerSearch) {
+    customerSearch.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        lookupCustomer();
+      }
+    });
+  }
+  
+  // Product search
+  const productSearch = document.getElementById('productSearch');
+  if (productSearch) {
+    productSearch.addEventListener('input', searchProducts);
+  }
+}
+
+async function loadProducts() {
+  try {
+    const response = await fetch('/staff/api/products');
+    const data = await response.json();
+    
+    if (data.success) {
+      displayProducts(data.products);
+    }
+  } catch (error) {
+    console.error('Error loading products:', error);
+  }
+}
+
+async function loadCategories() {
+  try {
+    const response = await fetch('/staff/api/categories');
+    const data = await response.json();
+    
+    if (data.success) {
+      const categoryBar = document.getElementById('categoryBar');
+      data.categories.forEach(category => {
+        const chip = document.createElement('div');
+        chip.className = 'cat-chip';
+        chip.dataset.cat = category.id;
+        chip.textContent = category.name;
+        chip.addEventListener('click', () => filterByCategory(category.id));
+        categoryBar.appendChild(chip);
+      });
+    }
+  } catch (error) {
+    console.error('Error loading categories:', error);
+  }
+}
+
+function displayProducts(products) {
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+  
+  products.forEach(product => {
+    const tile = document.createElement('div');
+    tile.className = 'q-tile';
+    
+    const stockStatus = getStockStatus(product.variants);
+    const sizes = product.variants.map(v => 
+      `<span class="q-sz ${v.stock_quantity === 0 ? 'oos' : ''}" 
+             data-variant-id="${v.id}" 
+             data-product-id="${product.id}"
+             data-price="${product.price}"
+             data-size="${v.size}"
+             onclick="selectSize(this)">
+        ${v.size}
+      </span>`
+    ).join('');
+    
+    tile.innerHTML = `
+      <div class="q-tile-stock ${stockStatus.class}">${stockStatus.text}</div>
+      <div class="q-tile-emoji">${getProductEmoji(product.category)}</div>
+      <div class="q-tile-brand">${product.brand || 'MBM'}</div>
+      <div class="q-tile-name">${product.name}</div>
+      <div class="q-tile-price">₹${product.price.toFixed(2)}</div>
+      <div class="q-tile-sizes">${sizes}</div>
+    `;
+    
+    grid.appendChild(tile);
+  });
+}
+
+function getStockStatus(variants) {
+  const totalStock = variants.reduce((sum, v) => sum + v.stock_quantity, 0);
+  if (totalStock === 0) return { class: 'stock-oos', text: 'OOS' };
+  if (totalStock <= 5) return { class: 'stock-low', text: 'LOW' };
+  return { class: 'stock-ok', text: 'OK' };
+}
+
+function getProductEmoji(category) {
+  const emojis = {
+    'Shirts': '👔',
+    'T-Shirts': '👕',
+    'Jeans': '👖',
+    'Trousers': '👖',
+    'Shorts': '🩳',
+    'Dresses': '👗',
+    'Shoes': '👟',
+    'Accessories': '🧢'
+  };
+  return emojis[category] || '📦';
+}
+
+function selectSize(element) {
+  if (element.classList.contains('oos')) {
+    return;
+  }
+  
+  const productId = element.dataset.productId;
+  const variantId = element.dataset.variantId;
+  const size = element.dataset.size;
+  const price = parseFloat(element.dataset.price);
+  
+  addToCart({
+    product_id: productId,
+    variant_id: variantId,
+    size: size,
+    price: price,
+    quantity: 1
+  });
+}
+
+function addToCart(item) {
+  const existingItem = cart.find(cartItem => cartItem.variant_id === item.variant_id);
+  
+  if (existingItem) {
+    existingItem.quantity += 1;
+  } else {
+    // Get product details
+    const productTile = document.querySelector(`[data-variant-id="${item.variant_id}"]`).closest('.q-tile');
+    const productName = productTile.querySelector('.q-tile-name').textContent;
+    const brand = productTile.querySelector('.q-tile-brand').textContent;
+    
+    cart.push({
+      ...item,
+      product_name: productName,
+      brand: brand
+    });
+  }
+  
+  updateCartDisplay();
+}
+
+function updateCartDisplay() {
+  const cartWrap = document.getElementById('cartItemsWrap');
+  const cartTotals = document.getElementById('cartTotals');
+  
+  if (cart.length === 0) {
+    cartWrap.innerHTML = `
+      <div class="empty-cart">
+        <i class="bi bi-cart-x"></i>
+        <p>Cart is empty</p>
+      </div>
+    `;
+    cartTotals.style.display = 'none';
+    return;
+  }
+  
+  // Display cart items
+  cartWrap.innerHTML = cart.map((item, index) => `
+    <div class="cart-item">
+      <div class="ci-row">
+        <div>
+          <div class="ci-name">${item.product_name}</div>
+          <div class="ci-meta">${item.brand} | Size: ${item.size}</div>
+        </div>
+        <div class="ci-price">₹${item.price.toFixed(2)}</div>
+      </div>
+      <div class="ci-qty-row">
+        <div class="ci-qty-btn" onclick="updateQuantity(${index}, -1)">-</div>
+        <div class="ci-qty">${item.quantity}</div>
+        <div class="ci-qty-btn" onclick="updateQuantity(${index}, 1)">+</div>
+        <div class="ci-total">₹${(item.price * item.quantity).toFixed(2)}</div>
+      </div>
+    </div>
+  `).join('');
+  
+  // Calculate totals
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const tax = subtotal * 0.18;
+  const discount = 0; // TODO: Add discount logic
+  const total = subtotal + tax - discount;
+  
+  document.getElementById('subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+  document.getElementById('tax').textContent = `₹${tax.toFixed(2)}`;
+  document.getElementById('discount').textContent = `₹${discount.toFixed(2)}`;
+  document.getElementById('total').textContent = `₹${total.toFixed(2)}`;
+  
+  cartTotals.style.display = 'block';
+}
+
+function updateQuantity(index, change) {
+  cart[index].quantity += change;
+  
+  if (cart[index].quantity <= 0) {
+    cart.splice(index, 1);
+  }
+  
+  updateCartDisplay();
+}
+
+function clearCart() {
+  if (cart.length > 0 && confirm('Are you sure you want to clear the cart?')) {
+    cart = [];
+    selectedCustomer = null;
+    updateCartDisplay();
+    document.getElementById('currentCustomerInfo').style.display = 'none';
+    document.getElementById('customerNameInput').value = '';
+  }
+}
+
+async function completeSale() {
+  if (cart.length === 0) {
+    alert('Cart is empty');
+    return;
+  }
+  
+  const customerName = document.getElementById('customerNameInput').value || 'Walk-in Customer';
+  const employeeCode = document.getElementById('employeeCodeInput').value;
+  const total = document.getElementById('total').textContent;
+  
+  if (confirm(`Complete sale for ${customerName}?\nTotal: ${total}`)) {
+    try {
+      const response = await fetch('/staff/api/pos/complete-sale', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cart_items: cart,
+          customer_id: selectedCustomer ? selectedCustomer.id : null,
+          customer_name: customerName,
+          employee_code: employeeCode,
+          subtotal: parseFloat(document.getElementById('subtotal').textContent.replace('₹', '')),
+          tax: parseFloat(document.getElementById('tax').textContent.replace('₹', '')),
+          total: parseFloat(total.replace('₹', ''))
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`Sale completed! Order: ${data.order_number}`);
+        cart = [];
+        selectedCustomer = null;
+        updateCartDisplay();
+        document.getElementById('currentCustomerInfo').style.display = 'none';
+        document.getElementById('customerNameInput').value = '';
+        document.getElementById('employeeCodeInput').value = '';
+      } else {
+        alert('Error: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error completing sale:', error);
+      alert('An error occurred while completing the sale');
+    }
+  }
+}
+
+function holdSale() {
+  // TODO: Implement hold sale functionality
+  alert('Hold sale feature coming soon!');
+}
+
+// Customer lookup functionality
+async function lookupCustomer() {
+  const phone = document.getElementById('customerPhoneSearch').value.trim();
+  
+  if (!phone) {
+    alert('Please enter a phone number');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/staff/api/customer/lookup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phone: phone })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      displayCustomerInsights(data.customer);
+      setSelectedCustomer(data.customer);
+    } else {
+      alert(data.error || 'Customer not found');
+    }
+  } catch (error) {
+    console.error('Error looking up customer:', error);
+    alert('An error occurred while looking up customer');
+  }
+}
+
+function setSelectedCustomer(customer) {
+  selectedCustomer = customer.customer;
+  
+  // Update current customer info display
+  document.getElementById('currentCustomerName').textContent = selectedCustomer.name;
+  document.getElementById('currentCustomerLTV').textContent = customer.lifetime_value.total_lifetime_value.toFixed(2);
+  document.getElementById('currentCustomerInfo').style.display = 'block';
+  
+  // Update customer name input
+  document.getElementById('customerNameInput').value = selectedCustomer.name;
+}
+
+// Product search functionality
+async function searchProducts() {
+  const query = document.getElementById('productSearch').value.trim();
+  const searchResults = document.getElementById('searchResults');
+  
+  if (query.length < 2) {
+    searchResults.style.display = 'none';
+    return;
+  }
+  
+  try {
+    const response = await fetch('/staff/api/products');
+    const data = await response.json();
+    
+    if (data.success) {
+      const filtered = data.products.filter(product => 
+        product.name.toLowerCase().includes(query.toLowerCase()) ||
+        product.brand.toLowerCase().includes(query.toLowerCase()) ||
+        product.sku.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      if (filtered.length > 0) {
+        searchResults.innerHTML = filtered.map(product => `
+          <div class="search-result-item" onclick="selectProduct(${product.id})">
+            <div>
+              <div class="sri-name">${product.name}</div>
+              <div class="sri-meta">${product.brand} | ${product.category}</div>
+            </div>
+            <div class="sri-right">
+              <div class="sri-price">₹${product.price.toFixed(2)}</div>
+              ${product.variants.length > 0 ? `<div class="sri-size">${product.variants[0].size}</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+        searchResults.style.display = 'block';
+      } else {
+        searchResults.innerHTML = '<div class="search-result-item"><div class="sri-name">No products found</div></div>';
+        searchResults.style.display = 'block';
+      }
+    }
+  } catch (error) {
+    console.error('Error searching products:', error);
+  }
+}
+
+function selectProduct(productId) {
+  document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('productSearch').value = '';
+  
+  // Scroll to product in grid
+  const productTile = document.querySelector(`[data-product-id="${productId}"]`);
+  if (productTile) {
+    productTile.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    productTile.style.animation = 'pulse 1s';
+    setTimeout(() => {
+      productTile.style.animation = '';
+    }, 1000);
+  }
+}
+
+function filterByCategory(categoryId) {
+  // Update active chip
+  document.querySelectorAll('.cat-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.cat === categoryId);
+  });
+  
+  // Filter products
+  const response = fetch(`/staff/api/products${categoryId ? '?category_id=' + categoryId : ''}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        displayProducts(data.products);
+      }
+    });
+}
+
+// Hide search results when clicking outside
+document.addEventListener('click', function(e) {
+  const searchResults = document.getElementById('searchResults');
+  const productSearch = document.getElementById('productSearch');
+  
+  if (!searchResults.contains(e.target) && e.target !== productSearch) {
+    searchResults.style.display = 'none';
+  }
+});
+
+// Add pulse animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+`;
+document.head.appendChild(style);
+</script>
+
+{% endblock %}
