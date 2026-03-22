@@ -130,12 +130,6 @@ def add_to_cart():
                 variant_id=variant_id,
                 quantity=quantity))
         db.session.commit()
-        # Send confirmation email
-        try:
-            from app.mail_service import send_order_confirmation
-            send_order_confirmation(current_user, order)
-        except Exception as e:
-            print(f"Email error: {e}")
         flash(f'Added to cart! 🛍️', 'success')
     else:
         flash('Please log in or register to add items to your cart.', 'warning')
@@ -152,12 +146,6 @@ def remove_from_cart(item_id):
     if item.user_id == current_user.id:
         db.session.delete(item)
         db.session.commit()
-        # Send confirmation email
-        try:
-            from app.mail_service import send_order_confirmation
-            send_order_confirmation(current_user, order)
-        except Exception as e:
-            print(f"Email error: {e}")
         flash('Item removed from cart.', 'info')
     return redirect(url_for('customer.cart'))
 
@@ -208,6 +196,16 @@ def checkout():
         db.session.delete(item)   # clear cart
 
     db.session.commit()
+
+    # ── Send order confirmation email with PDF invoice ────────────
+    try:
+        from app.mail_service import send_order_confirmation
+        send_order_confirmation(current_user, order)
+        print(f"  ✅ Order confirmation email sent for {order_number}")
+    except Exception as e:
+        # Never crash the checkout if email fails
+        print(f"  ⚠️  Order email failed (order still placed): {e}")
+
     flash(f'🎉 Order {order_number} placed! Walk in to pick it up at Main Road, Mantha.', 'success')
     return redirect(url_for('customer.order_confirmation', order_id=order.id))
 

@@ -1,11 +1,12 @@
 from flask import Flask
 from flask_login import LoginManager
 from flask_socketio import SocketIO
+from flask_mail import Mail
 from app.models import db
 
 login_manager = LoginManager()
 socketio = SocketIO()
-
+mail = Mail()
 
 def create_app():
     app = Flask(__name__)
@@ -17,6 +18,8 @@ def create_app():
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'warning'
     socketio.init_app(app, cors_allowed_origins="*")
+    mail.init_app(app)
+    app.config['MAIL_ENABLED'] = bool(app.config.get('MAIL_USERNAME', ''))
 
     from app.models import User
 
@@ -36,7 +39,6 @@ def create_app():
     from app.employee.routes import employee_bp
     app.register_blueprint(employee_bp, url_prefix='/staff')
 
-
     # Make datetime.now() available in all templates
     from datetime import datetime
     app.jinja_env.globals['now'] = datetime.now
@@ -55,7 +57,7 @@ def _seed_initial_data(app):
     if User.query.first() is not None:
         return
 
-    print("🌱 Seeding initial data for M B MANIYAR...")
+    print("Seeding initial data for M B MANIYAR...")
 
     admin_user = User(
         username='admin',
@@ -82,4 +84,4 @@ def _seed_initial_data(app):
         db.session.add(Category(name=name, slug=slug))
 
     db.session.commit()
-    print("✅ Initial data seeded! Admin login: admin / admin123")
+    print("Initial data seeded! Admin login: admin / admin123")

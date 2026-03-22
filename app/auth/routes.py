@@ -68,7 +68,8 @@ def register():
             flash('Email already registered.','danger')
             return render_template('auth/register.html')
         if not email:
-            email = f"{username}@mbmaniyar.local"
+            flash("Email address is required to receive order updates.", "danger")
+            return render_template("auth/register.html")
         token = secrets.token_urlsafe(32)
         user  = User(full_name=full_name, username=username, email=email,
                      phone=phone, password_hash=generate_password_hash(password),

@@ -352,8 +352,7 @@ def update_order(oid):
             flash(f'✅ Status updated. (No email — status not tracked or no customer email)', 'info')
     except Exception as e:
         print(f"Email error: {e}")
-        flash(f'✅ Status updated. (Email failed: {e})', 'warning')
-    flash(f'Order {order.order_number} updated!', 'success')
+        flash(f'Order {order.order_number} updated. (Email failed: {e})', 'warning')
     return redirect(url_for('admin.orders'))
 
 # ── POS ───────────────────────────────────────────────────────────
